@@ -3,6 +3,7 @@ pragma solidity ^0.8.24;
 
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 
 contract UniqueCollectible is ERC721URIStorage {
     using Counters for Counters.Counter;
@@ -27,5 +28,14 @@ contract UniqueCollectible is ERC721URIStorage {
         uint256 newId = _tokenIds.current();
         _safeMint(to, newId);
         _setTokenURI(newId, uri); // e.g. "1.json"
+    }
+
+    function batchMint(address to, uint256 quantity) external {
+        for (uint256 i = 0; i < quantity; i++) {
+            _tokenIds.increment();
+            uint256 newId = _tokenIds.current();
+            _safeMint(to, newId);
+            _setTokenURI(newId, string(abi.encodePacked(Strings.toString(newId), ".json")));
+        }
     }
 }
