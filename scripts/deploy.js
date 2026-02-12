@@ -1,10 +1,24 @@
 const hre = require("hardhat");
+const fs = require("fs");
+const path = require("path");
 
 async function main() {
   console.log("Deploying GameInventory contract...\n");
 
-  // Configuration
-  const baseURI = "https://api.example.com/metadata/";
+  // Configuration - Read IPFS CID if available
+  let baseURI;
+  const ipfsCidPath = path.join(__dirname, "../.ipfs-cid");
+
+  if (fs.existsSync(ipfsCidPath)) {
+    const ipfsCid = fs.readFileSync(ipfsCidPath, "utf8").trim();
+    baseURI = `ipfs://${ipfsCid}/`;
+    console.log("Using IPFS CID from .ipfs-cid file");
+    console.log("IPFS CID:", ipfsCid);
+  } else {
+    baseURI = "https://api.example.com/metadata/";
+    console.log("Warning: .ipfs-cid file not found, using fallback JSON server URI");
+    console.log("To use IPFS, first run: node scripts/uploadToIPFS.js");
+  }
 
   // Get deployer
   const [deployer] = await ethers.getSigners();

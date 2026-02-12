@@ -1,6 +1,6 @@
 # GameInventory - ERC-1155 Multi-Token Smart Contract
 
-A fully-featured ERC-1155 multi-token smart contract for game items, supporting fungible, semi-fungible, and NFT tokens with batch operations and dynamic metadata URIs.
+A fully-featured ERC-1155 multi-token smart contract for game items, supporting fungible, semi-fungible, and NFT tokens with batch operations and decentralized metadata storage on IPFS.
 
 ## Features
 
@@ -10,7 +10,8 @@ A fully-featured ERC-1155 multi-token smart contract for game items, supporting 
   - **Founder Sword (ID 1)**: NFT - 1 unique unit
   - **Health Potion (ID 2)**: Semi-Fungible token - 100 units
 - **Batch Operations**: Transfer multiple token types in a single transaction
-- **Dynamic Metadata URIs**: Automatically generated JSON metadata URLs
+- **IPFS Metadata Storage**: Decentralized, immutable metadata hosting via Pinata
+- **Dynamic Metadata URIs**: Automatically generated IPFS URLs for token metadata
 - **Access Control**: Owner-controlled minting and URI updates
 - **Gas Optimized**: Leverages OpenZeppelin's battle-tested implementations
 
@@ -49,6 +50,73 @@ cp .env.example .env
 # Edit .env with your values
 ```
 
+## IPFS Setup
+
+The contract uses IPFS (InterPlanetary File System) for decentralized metadata storage. Metadata is hosted on Pinata, a free IPFS pinning service.
+
+### Step 1: Get Pinata JWT Token
+
+1. Sign up for a free account at [https://pinata.cloud](https://pinata.cloud)
+2. Navigate to **API Keys** section (https://app.pinata.cloud/developers/api-keys)
+3. Click **New Key**
+4. Enable permissions for:
+   - **pinFileToIPFS** (required for uploads)
+   - **Admin** permissions (recommended)
+5. Give it a name (e.g., "GameInventory Upload")
+6. Copy the **JWT token** (this is shown only once!)
+
+### Step 2: Configure Environment
+
+Add your Pinata JWT to the `.env` file:
+
+```env
+PINATA_JWT=your-jwt-token-here
+```
+
+**Important:** The new Pinata SDK uses JWT authentication, not API Key/Secret pairs.
+
+### Step 3: Upload Metadata to IPFS
+
+The project includes metadata files in the `metadata/` directory (0.json, 1.json, 2.json). Upload them to IPFS:
+
+```bash
+npm run upload:ipfs
+```
+
+This command will:
+- Authenticate with Pinata
+- Upload the metadata folder to IPFS
+- Return a Content Identifier (CID) like `QmXXXXX...`
+- Save the CID to `.ipfs-cid` file for deployment
+- Display gateway URLs for verification
+
+### Step 4: Verify Metadata
+
+Check your metadata is accessible via IPFS gateways:
+
+```
+https://ipfs.io/ipfs/QmYourCID/0.json
+https://gateway.pinata.cloud/ipfs/QmYourCID/0.json
+```
+
+### Step 5: Deploy Contract
+
+The deployment script automatically reads the CID from `.ipfs-cid`:
+
+```bash
+npm run deploy:localhost
+```
+
+The contract will be deployed with `ipfs://QmYourCID/` as the base URI.
+
+### IPFS Benefits
+
+- **Decentralized**: No single point of failure
+- **Immutable**: Content-addressed storage ensures data integrity
+- **Cost-Effective**: Free hosting with Pinata
+- **Standard**: NFT marketplaces natively support `ipfs://` URIs
+- **Permanent**: Pinned files remain accessible indefinitely
+
 ## Project Structure
 
 ```
@@ -57,7 +125,12 @@ multi-token-logic/
 │   └── GameInventory.sol           # Main ERC-1155 contract
 ├── scripts/
 │   ├── deploy.js                   # Deployment script
-│   └── interact.js                 # Interaction script
+│   ├── interact.js                 # Interaction script
+│   └── uploadToIPFS.js             # IPFS metadata upload
+├── metadata/                        # Token metadata files
+│   ├── 0.json                      # Gold metadata
+│   ├── 1.json                      # Founder Sword metadata
+│   └── 2.json                      # Health Potion metadata
 ├── test/
 │   └── GameInventory.test.js       # Test suite (38 tests)
 ├── hardhat.config.js               # Hardhat configuration
@@ -155,15 +228,21 @@ const balances = await gameInventory.balanceOfBatch(
 
 ### Requirement 3: URI Override
 
-Dynamic metadata URLs pointing to JSON server:
+Dynamic metadata URLs pointing to IPFS:
 
 ```javascript
-await gameInventory.uri(0); // Returns: "https://api.example.com/metadata/0.json"
-await gameInventory.uri(1); // Returns: "https://api.example.com/metadata/1.json"
-await gameInventory.uri(2); // Returns: "https://api.example.com/metadata/2.json"
+await gameInventory.uri(0); // Returns: "ipfs://QmYourCID/0.json"
+await gameInventory.uri(1); // Returns: "ipfs://QmYourCID/1.json"
+await gameInventory.uri(2); // Returns: "ipfs://QmYourCID/2.json"
 ```
 
 **Validation**: Run tests with `npx hardhat test --grep "URI"`
+
+**IPFS Gateway Access**:
+```
+https://ipfs.io/ipfs/QmYourCID/0.json
+https://gateway.pinata.cloud/ipfs/QmYourCID/0.json
+```
 
 ## Contract API
 
@@ -217,13 +296,12 @@ Mints additional tokens.
 
 ## Metadata Format
 
-Token metadata follows the ERC-1155 metadata standard. Each token URI points to a JSON file with this structure:
+Token metadata follows the ERC-1155 metadata standard and is stored on IPFS. Each token URI points to a JSON file with this structure:
 
 ```json
 {
   "name": "Token Name",
   "description": "Token description",
-  "image": "https://api.example.com/images/token.png",
   "properties": {
     "type": "Fungible|NFT|Semi-Fungible",
     "rarity": "Common|Rare|Legendary",
@@ -234,9 +312,16 @@ Token metadata follows the ERC-1155 metadata standard. Each token URI points to 
 
 ### Example Metadata URLs
 
-- **Gold**: `https://api.example.com/metadata/0.json`
-- **Founder Sword**: `https://api.example.com/metadata/1.json`
-- **Health Potion**: `https://api.example.com/metadata/2.json`
+**Native IPFS URIs** (used by contract):
+- **Gold**: `ipfs://QmYourCID/0.json`
+- **Founder Sword**: `ipfs://QmYourCID/1.json`
+- **Health Potion**: `ipfs://QmYourCID/2.json`
+
+**Gateway URLs** (for browser access):
+- **Gold**: `https://ipfs.io/ipfs/QmYourCID/0.json`
+- **Gold (Pinata)**: `https://gateway.pinata.cloud/ipfs/QmYourCID/0.json`
+
+NFT marketplaces and wallets automatically resolve `ipfs://` URIs using their preferred gateways.
 
 ## Security Features
 

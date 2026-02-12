@@ -6,7 +6,7 @@ describe("GameInventory", function () {
   // Fixture for test setup
   async function deployGameInventoryFixture() {
     const [owner, addr1, addr2, addr3] = await ethers.getSigners();
-    const baseURI = "https://api.example.com/metadata/";
+    const baseURI = "ipfs://QmTest123/";
 
     const GameInventory = await ethers.getContractFactory("GameInventory");
     const gameInventory = await GameInventory.deploy(baseURI);
@@ -52,39 +52,39 @@ describe("GameInventory", function () {
     it("Should return correct URI for GOLD (ID 0)", async function () {
       const { gameInventory } = await loadFixture(deployGameInventoryFixture);
       expect(await gameInventory.uri(0))
-        .to.equal("https://api.example.com/metadata/0.json");
+        .to.equal("ipfs://QmTest123/0.json");
     });
 
     it("Should return correct URI for FOUNDER_SWORD (ID 1)", async function () {
       const { gameInventory } = await loadFixture(deployGameInventoryFixture);
       expect(await gameInventory.uri(1))
-        .to.equal("https://api.example.com/metadata/1.json");
+        .to.equal("ipfs://QmTest123/1.json");
     });
 
     it("Should return correct URI for HEALTH_POTION (ID 2)", async function () {
       const { gameInventory } = await loadFixture(deployGameInventoryFixture);
       expect(await gameInventory.uri(2))
-        .to.equal("https://api.example.com/metadata/2.json");
+        .to.equal("ipfs://QmTest123/2.json");
     });
 
     it("Should return correct URI for any token ID", async function () {
       const { gameInventory } = await loadFixture(deployGameInventoryFixture);
       expect(await gameInventory.uri(999))
-        .to.equal("https://api.example.com/metadata/999.json");
+        .to.equal("ipfs://QmTest123/999.json");
     });
 
     it("Should update URI correctly when setBaseURI is called", async function () {
       const { gameInventory, owner } = await loadFixture(deployGameInventoryFixture);
-      const newBaseURI = "https://newapi.example.com/items/";
+      const newBaseURI = "ipfs://QmNewCID456/";
 
       await gameInventory.connect(owner).setBaseURI(newBaseURI);
       expect(await gameInventory.baseURI()).to.equal(newBaseURI);
-      expect(await gameInventory.uri(0)).to.equal("https://newapi.example.com/items/0.json");
+      expect(await gameInventory.uri(0)).to.equal("ipfs://QmNewCID456/0.json");
     });
 
     it("Should emit BaseURIUpdated event when URI is changed", async function () {
       const { gameInventory, owner } = await loadFixture(deployGameInventoryFixture);
-      const newBaseURI = "https://newapi.example.com/items/";
+      const newBaseURI = "ipfs://QmNewCID456/";
 
       await expect(gameInventory.connect(owner).setBaseURI(newBaseURI))
         .to.emit(gameInventory, "BaseURIUpdated")
@@ -93,7 +93,7 @@ describe("GameInventory", function () {
 
     it("Should revert when non-owner tries to update base URI", async function () {
       const { gameInventory, addr1 } = await loadFixture(deployGameInventoryFixture);
-      const newBaseURI = "https://newapi.example.com/items/";
+      const newBaseURI = "ipfs://QmNewCID456/";
 
       await expect(
         gameInventory.connect(addr1).setBaseURI(newBaseURI)

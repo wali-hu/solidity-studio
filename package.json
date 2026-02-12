@@ -9,7 +9,8 @@
     "compile": "hardhat compile",
     "deploy:localhost": "hardhat run scripts/deploy.js --network localhost",
     "deploy:sepolia": "hardhat run scripts/deploy.js --network sepolia",
-    "node": "hardhat node"
+    "node": "hardhat node",
+    "upload:ipfs": "node scripts/uploadToIPFS.js"
   },
   "keywords": [],
   "author": "",
@@ -27,6 +28,7 @@
     "solidity-coverage": "^0.8.17"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^5.4.0"
+    "@openzeppelin/contracts": "^5.4.0",
+    "pinata": "^2.5.4"
   }
 }
