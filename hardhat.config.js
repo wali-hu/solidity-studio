@@ -35,5 +35,9 @@ module.exports = {
     currency: "USD",
     outputFile: "gas-report.txt",
     noColors: true
+  },
+  mocha: {
+    require: ['test/hooks.js'],
+    timeout: 120000
   }
 };

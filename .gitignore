@@ -24,3 +24,8 @@ Thumbs.db
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Transaction capture output files
+test-transactions.json
+deployment-info.json
+interaction-info.json

@@ -33,10 +33,30 @@ async function main() {
   const GameInventory = await ethers.getContractFactory("GameInventory");
   const gameInventory = await GameInventory.deploy(baseURI);
 
+  // Get deployment transaction
+  const deploymentTx = gameInventory.deploymentTransaction();
+
+  console.log("\nDeployment Transaction:");
+  console.log("Transaction Hash:", deploymentTx.hash);
+  console.log("From:", deploymentTx.from);
+  console.log("Nonce:", deploymentTx.nonce);
+
   await gameInventory.waitForDeployment();
   const contractAddress = await gameInventory.getAddress();
 
-  console.log("GameInventory deployed to:", contractAddress);
+  // Get transaction receipt for additional details
+  const receipt = await deploymentTx.wait();
+
+  console.log("Block Number:", receipt.blockNumber);
+  console.log("Gas Used:", receipt.gasUsed.toString());
+  console.log("Status:", receipt.status === 1 ? "Success" : "Failed");
+
+  // Add Etherscan URL for Sepolia
+  if (hre.network.name === 'sepolia') {
+    console.log("Etherscan URL:", `https://sepolia.etherscan.io/tx/${deploymentTx.hash}`);
+  }
+
+  console.log("\nGameInventory deployed to:", contractAddress);
   console.log("Base URI:", baseURI);
   console.log("=".repeat(50));
 
@@ -65,12 +85,27 @@ async function main() {
     deployer: deployer.address,
     baseURI: baseURI,
     timestamp: new Date().toISOString(),
+    transaction: {
+      hash: deploymentTx.hash,
+      blockNumber: receipt.blockNumber,
+      gasUsed: receipt.gasUsed.toString(),
+      from: deploymentTx.from,
+      nonce: deploymentTx.nonce,
+      explorerUrl: hre.network.name === 'sepolia'
+        ? `https://sepolia.etherscan.io/tx/${deploymentTx.hash}`
+        : null
+    },
     tokenBalances: {
       gold: goldBalance.toString(),
       founderSword: swordBalance.toString(),
       healthPotion: potionBalance.toString()
     }
   };
+
+  // Save to JSON file
+  const outputPath = path.join(__dirname, '../deployment-info.json');
+  fs.writeFileSync(outputPath, JSON.stringify(deploymentInfo, null, 2));
+  console.log("\nDeployment info saved to: deployment-info.json");
 
   console.log("\nDeployment Summary:");
   console.log(JSON.stringify(deploymentInfo, null, 2));

@@ -1,4 +1,6 @@
 const hre = require("hardhat");
+const fs = require("fs");
+const path = require("path");
 
 async function main() {
   const contractAddress = process.env.CONTRACT_ADDRESS;
@@ -84,9 +86,24 @@ async function main() {
     "0x"
   );
 
-  console.log("Transaction hash:", tx.hash);
-  await tx.wait();
-  console.log("Batch transfer successful!");
+  console.log("\nBatch Transfer Transaction:");
+  console.log("Transaction Hash:", tx.hash);
+  console.log("From:", tx.from);
+  console.log("To:", tx.to);
+  console.log("Nonce:", tx.nonce);
+
+  const receipt = await tx.wait();
+
+  console.log("Block Number:", receipt.blockNumber);
+  console.log("Gas Used:", receipt.gasUsed.toString());
+  console.log("Status:", receipt.status === 1 ? "Success" : "Failed");
+
+  // Add Etherscan URL for Sepolia
+  if (hre.network.name === 'sepolia') {
+    console.log("Etherscan URL:", `https://sepolia.etherscan.io/tx/${tx.hash}`);
+  }
+
+  console.log("\nBatch transfer successful!");
   console.log("=".repeat(50));
 
   // Verify balances after transfer
@@ -129,6 +146,50 @@ async function main() {
   console.log("Token 2 URI:", await gameInventory.uri(2));
   console.log("URI override working correctly!");
   console.log("=".repeat(50));
+
+  // Save interaction info to JSON
+  const interactionInfo = {
+    network: hre.network.name,
+    contractAddress: contractAddress,
+    timestamp: new Date().toISOString(),
+    batchTransfer: {
+      transaction: {
+        hash: tx.hash,
+        blockNumber: receipt.blockNumber,
+        gasUsed: receipt.gasUsed.toString(),
+        from: tx.from,
+        to: tx.to,
+        nonce: tx.nonce,
+        explorerUrl: hre.network.name === 'sepolia'
+          ? `https://sepolia.etherscan.io/tx/${tx.hash}`
+          : null
+      },
+      tokens: {
+        ids: ids,
+        amounts: amounts
+      },
+      participants: {
+        sender: owner.address,
+        recipient: recipientAddress
+      }
+    },
+    finalBalances: {
+      owner: {
+        gold: (await gameInventory.balanceOf(owner.address, 0)).toString(),
+        founderSword: (await gameInventory.balanceOf(owner.address, 1)).toString(),
+        healthPotion: (await gameInventory.balanceOf(owner.address, 2)).toString()
+      },
+      recipient: {
+        gold: (await gameInventory.balanceOf(recipientAddress, 0)).toString(),
+        founderSword: (await gameInventory.balanceOf(recipientAddress, 1)).toString(),
+        healthPotion: (await gameInventory.balanceOf(recipientAddress, 2)).toString()
+      }
+    }
+  };
+
+  const outputPath = path.join(__dirname, '../interaction-info.json');
+  fs.writeFileSync(outputPath, JSON.stringify(interactionInfo, null, 2));
+  console.log("\nInteraction info saved to: interaction-info.json");
 
   // Summary
   console.log("\nAll DoD Requirements Validated:");

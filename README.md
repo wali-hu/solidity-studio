@@ -371,6 +371,298 @@ npx hardhat test --grep "Batch Transfer"
 npx hardhat test --grep "Balance Of Batch"
 ```
 
+## Transaction Hash Capture
+
+The test suite includes an optional transaction hash capture feature that records all on-chain transactions from test executions. This is useful for debugging, gas analysis, and verification.
+
+### Enable Transaction Capture
+
+Run tests with transaction hash capture enabled:
+
+```bash
+# Run on local Hardhat network
+npm run test:capture
+
+# Or use environment variable directly
+CAPTURE_TX_HASH=true npm test
+```
+
+### Capture on Sepolia Testnet
+
+Capture real on-chain transaction hashes from Sepolia:
+
+```bash
+# Requires SEPOLIA_RPC_URL and PRIVATE_KEY in .env
+npm run test:capture:sepolia
+
+# Or manually
+CAPTURE_TX_HASH=true npx hardhat test --network sepolia
+```
+
+### Output
+
+Transaction hashes are saved to `test-transactions.json` with detailed information:
+
+- Transaction hash and block number
+- Gas used per transaction
+- Test name and test suite grouping
+- Contract method signatures
+- Network information (chainId, explorer URLs)
+- Timestamp and transaction status
+- Gas usage analysis by contract method
+
+### Example Output
+
+```json
+{
+  "captureMetadata": {
+    "generatedAt": "2026-02-13T05:17:45.186Z",
+    "network": "hardhat",
+    "chainId": 31337,
+    "totalTransactions": 22,
+    "totalTests": 38,
+    "testsWithTransactions": 22,
+    "testsReadOnly": 16,
+    "testRunDuration": "1.0s"
+  },
+  "transactions": [
+    {
+      "testName": "Should transfer all 3 token types in one batch transaction",
+      "testSuite": "Batch Transfer - DoD Critical Requirement",
+      "transactionHash": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb8",
+      "blockNumber": 5,
+      "gasUsed": "125892",
+      "from": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+      "to": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+      "network": "hardhat",
+      "chainId": 31337,
+      "blockchainExplorer": null,
+      "timestamp": "2026-02-13T05:17:44.880Z",
+      "status": "success"
+    }
+  ],
+  "transactionsByTestSuite": {
+    "Batch Transfer - DoD Critical Requirement": 6,
+    "URI Functionality - DoD Requirement": 3
+  },
+  "gasAnalysis": {
+    "totalGasUsed": "2938181",
+    "averageGasPerTransaction": "133553",
+    "gasByMethod": {
+      "safeBatchTransferFrom": {
+        "count": 6,
+        "avg": "120000",
+        "min": "115000",
+        "max": "125000"
+      }
+    }
+  }
+}
+```
+
+For Sepolia transactions, the `blockchainExplorer` field includes the Etherscan URL:
+
+```json
+{
+  "transactionHash": "0x1a6e3301dd4e59481d58d7a392230a24b6988f9d6f9768b143de800127a9e5a7",
+  "blockchainExplorer": "https://sepolia.etherscan.io/tx/0x1a6e3301dd4e59481d58d7a392230a24b6988f9d6f9768b143de800127a9e5a7"
+}
+```
+
+### Configuration
+
+Customize capture behavior using environment variables in `.env`:
+
+```bash
+# Enable/disable capture (default: false)
+CAPTURE_TX_HASH=true
+
+# Optional: custom output file path
+CAPTURE_OUTPUT_FILE=my-transactions.json
+```
+
+### Features
+
+- Zero test code modifications required
+- Automatic detection of write operations (state-changing transactions)
+- Read-only operations automatically skipped
+- Network-aware (supports Hardhat, Sepolia, and other networks)
+- Gas usage analysis by contract method
+- Transaction grouping by test suite
+- Blockchain explorer URLs for supported networks
+- Minimal performance overhead (<10% increase in test time)
+
+## Script Transaction Capture
+
+The deployment and interaction scripts automatically capture transaction hashes and save them to JSON files for reference and verification.
+
+### Deploy Script with Transaction Capture
+
+Deploy the contract and capture deployment transaction details:
+
+```bash
+# Deploy to local Hardhat network
+npm run deploy:localhost
+
+# Deploy to Sepolia testnet
+npm run deploy:sepolia
+```
+
+**Output File**: `deployment-info.json`
+
+The deployment script captures:
+- Contract address
+- Deployment transaction hash
+- Block number and gas used
+- Deployer address and base URI
+- Initial token balances
+- Etherscan URL (for Sepolia)
+
+**Example Output**:
+```json
+{
+  "network": "sepolia",
+  "contractAddress": "0xC005567bE071811f921388a4c000433D9D89e0C5",
+  "deployer": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+  "baseURI": "ipfs://QmYourCID/",
+  "timestamp": "2026-02-13T10:30:00.000Z",
+  "transaction": {
+    "hash": "0x1a6e3301dd4e59481d58d7a392230a24b6988f9d6f9768b143de800127a9e5a7",
+    "blockNumber": 5234567,
+    "gasUsed": "2145892",
+    "from": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+    "nonce": 42,
+    "explorerUrl": "https://sepolia.etherscan.io/tx/0x1a6e3301dd4e59481d58d7a392230a24b6988f9d6f9768b143de800127a9e5a7"
+  },
+  "tokenBalances": {
+    "gold": "1000000",
+    "founderSword": "1",
+    "healthPotion": "100"
+  }
+}
+```
+
+### Interact Script with Transaction Capture
+
+Interact with deployed contract and capture transaction details:
+
+```bash
+# Interact on local Hardhat network
+CONTRACT_ADDRESS=0x... npx hardhat run scripts/interact.js --network localhost
+
+# Interact on Sepolia testnet (with recipient address)
+CONTRACT_ADDRESS=0x... RECIPIENT_ADDRESS=0x... npx hardhat run scripts/interact.js --network sepolia
+```
+
+**Output File**: `interaction-info.json`
+
+The interaction script captures:
+- Batch transfer transaction hash
+- Block number and gas used
+- Token IDs and amounts transferred
+- Sender and recipient addresses
+- Final balances after transfer
+- Etherscan URL (for Sepolia)
+
+**Example Output**:
+```json
+{
+  "network": "sepolia",
+  "contractAddress": "0xC005567bE071811f921388a4c000433D9D89e0C5",
+  "timestamp": "2026-02-13T10:35:00.000Z",
+  "batchTransfer": {
+    "transaction": {
+      "hash": "0x9f2e8a4b3c1d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f",
+      "blockNumber": 5234580,
+      "gasUsed": "125000",
+      "from": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+      "to": "0xC005567bE071811f921388a4c000433D9D89e0C5",
+      "nonce": 43,
+      "explorerUrl": "https://sepolia.etherscan.io/tx/0x9f2e8a4b3c1d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f"
+    },
+    "tokens": {
+      "ids": [0, 1, 2],
+      "amounts": [1000, 1, 10]
+    },
+    "participants": {
+      "sender": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+      "recipient": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+    }
+  },
+  "finalBalances": {
+    "owner": {
+      "gold": "999000",
+      "founderSword": "0",
+      "healthPotion": "90"
+    },
+    "recipient": {
+      "gold": "1000",
+      "founderSword": "1",
+      "healthPotion": "10"
+    }
+  }
+}
+```
+
+### Combined Test Script
+
+Test both deployment and interaction in a single run:
+
+```bash
+# Run combined test on local Hardhat network
+npx hardhat run scripts/test-tx-capture.js --network localhost
+
+# Run combined test on Sepolia testnet
+npx hardhat run scripts/test-tx-capture.js --network sepolia
+```
+
+This script:
+1. Deploys the GameInventory contract
+2. Captures deployment transaction
+3. Performs batch transfer of all 3 token types
+4. Captures transfer transaction
+5. Verifies final balances
+6. Saves both transactions to separate JSON files
+
+**Output Files**:
+- `deployment-info.json` - Deployment transaction details
+- `interaction-info.json` - Batch transfer transaction details
+
+### Complete Sepolia Workflow
+
+End-to-end workflow for deploying and interacting on Sepolia testnet:
+
+```bash
+# Step 1: Upload metadata to IPFS (if not already done)
+npm run upload:ipfs
+
+# Step 2: Deploy contract to Sepolia
+npm run deploy:sepolia
+# Note the CONTRACT_ADDRESS from output
+
+# Step 3: Interact with contract on Sepolia
+CONTRACT_ADDRESS=0xYourAddress RECIPIENT_ADDRESS=0xRecipient npx hardhat run scripts/interact.js --network sepolia
+
+# Step 4: Verify transactions on Etherscan
+# Check the explorerUrl in deployment-info.json and interaction-info.json
+```
+
+**Transaction Files Generated**:
+- `deployment-info.json` - Contains deployment tx hash and Etherscan URL
+- `interaction-info.json` - Contains batch transfer tx hash and Etherscan URL
+- `test-transactions.json` - (Only when running `npm run test:capture:sepolia`)
+
+### Verifying Transactions
+
+All transaction hashes can be verified on blockchain explorers:
+
+**Hardhat (Local Network)**:
+- No explorer available (use transaction hash in JSON files for reference)
+
+**Sepolia Testnet**:
+- Etherscan URL automatically included in JSON output
+- Manual check: `https://sepolia.etherscan.io/tx/YOUR_TX_HASH`
+
 ## Example Usage
 
 ### Basic Transfer

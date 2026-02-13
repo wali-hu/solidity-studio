@@ -6,6 +6,8 @@
   "scripts": {
     "test": "hardhat test",
     "test:coverage": "hardhat coverage",
+    "test:capture": "CAPTURE_TX_HASH=true hardhat test",
+    "test:capture:sepolia": "CAPTURE_TX_HASH=true hardhat test --network sepolia",
     "compile": "hardhat compile",
     "deploy:localhost": "hardhat run scripts/deploy.js --network localhost",
     "deploy:sepolia": "hardhat run scripts/deploy.js --network sepolia",
