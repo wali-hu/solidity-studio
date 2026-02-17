@@ -1,0 +1,17 @@
+{
+  "network": "sepolia",
+  "chainId": "11155111",
+  "deployer": "0x00b684Ca54D3174a13b28B9d08BcbbE18101e9A9",
+  "listingPrice": "100000000000000",
+  "contracts": {
+    "NFTCollection": {
+      "address": "0x4e9B981404e0bf11f49faD82Ee05F5fa3c8F87AD",
+      "name": "Awesome NFT Collection",
+      "symbol": "ANFT"
+    },
+    "NFTMarketplace": {
+      "address": "0xD528e7DA71cCB31b0c15af60E89B77BDD12E0c8f"
+    }
+  },
+  "timestamp": "2026-02-17T11:30:13.138Z"
+}
