@@ -1,0 +1,9 @@
+{
+  "name": "Mage",
+  "description": "A unique Mage character from the Gaming Characters collection",
+  "attributes": [
+    {"trait_type": "Class", "value": "mage"},
+    {"trait_type": "Level", "value": "15"},
+    {"trait_type": "Rarity", "value": "rare"}
+  ]
+}

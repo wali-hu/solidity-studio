@@ -1,0 +1,9 @@
+{
+  "name": "Warrior",
+  "description": "A unique Warrior character from the Gaming Characters collection",
+  "attributes": [
+    {"trait_type": "Class", "value": "warrior"},
+    {"trait_type": "Level", "value": "10"},
+    {"trait_type": "Rarity", "value": "common"}
+  ]
+}
