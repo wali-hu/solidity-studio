@@ -7,7 +7,7 @@ describe("UniqueCollectible", function () {
   beforeEach(async function () {
     [owner, addrA, addrB] = await ethers.getSigners();
     const UniqueCollectible = await ethers.getContractFactory("UniqueCollectible");
-    nft = await UniqueCollectible.deploy("UniqueCollectible", "UNC", "https://example.com/metadata/");
+    nft = await UniqueCollectible.deploy("unique-collectible", "UCOL", "https://example.com/metadata/");
     await nft.waitForDeployment();
   });
 
