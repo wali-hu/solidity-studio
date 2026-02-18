@@ -5,7 +5,7 @@ import { fileURLToPath } from "url";
 
 /**
  * Script to buy NFTs from the marketplace
- * Uses signers[2] (Buyer)
+ * Uses signers[2] (Bidder 1 / Buyer)
  * Usage: npx hardhat run scripts/buy.ts --network sepolia
  */
 
@@ -33,12 +33,12 @@ const marketplaceAddress = deploymentInfo.contracts.NFTMarketplace.address;
 console.log("Marketplace Address:", marketplaceAddress);
 
 const signers = await ethers.getSigners();
-const buyer = signers[2]; // Buyer account
+const buyer = signers[2]; // Bidder 1 / Buyer account
 if (!buyer) {
-  console.error("Error: BUYER_PRIVATE_KEY not configured in .env");
+  console.error("Error: BIDDER1_PRIVATE_KEY not configured in .env");
   process.exit(1);
 }
-console.log("Buying with account (Buyer):", buyer.address);
+console.log("Buying with account (Bidder 1 / Buyer):", buyer.address);
 
 const balance = await ethers.provider.getBalance(buyer.address);
 console.log("Account balance:", ethers.formatEther(balance), "ETH");

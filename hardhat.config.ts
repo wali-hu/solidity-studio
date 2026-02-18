@@ -36,7 +36,9 @@ export default defineConfig({
       accounts: [
         configVariable("SEPOLIA_PRIVATE_KEY"),
         configVariable("SELLER_PRIVATE_KEY"),
-        configVariable("BUYER_PRIVATE_KEY"),
+        configVariable("BIDDER1_PRIVATE_KEY"),
+        configVariable("BIDDER2_PRIVATE_KEY"),
+        configVariable("BIDDER3_PRIVATE_KEY"),
       ],
     },
   },

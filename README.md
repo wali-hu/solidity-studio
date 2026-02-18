@@ -36,13 +36,15 @@ A complete NFT marketplace and auction system built with Hardhat 3, Solidity, an
 
 ## Accounts
 
-The project uses three separate wallets:
+The project uses five separate wallets:
 
-| Account    | Signer Index | Private Key Variable  | Role                                                           |
-| ---------- | ------------ | --------------------- | -------------------------------------------------------------- |
-| **Owner**  | `signers[0]` | `SEPOLIA_PRIVATE_KEY` | Deploys contracts, withdraws fees, sets platform fee           |
-| **Seller** | `signers[1]` | `SELLER_PRIVATE_KEY`  | Mints NFTs, lists/auctions NFTs, cancels listings/auctions     |
-| **Buyer**  | `signers[2]` | `BUYER_PRIVATE_KEY`   | Buys NFTs from marketplace, bids on auctions                   |
+| Account      | Signer Index | Private Key Variable   | Role                                                       |
+| ------------ | ------------ | ---------------------- | ---------------------------------------------------------- |
+| **Owner**    | `signers[0]` | `SEPOLIA_PRIVATE_KEY`  | Deploys contracts, withdraws fees, sets platform fee       |
+| **Seller**   | `signers[1]` | `SELLER_PRIVATE_KEY`   | Mints NFTs, lists/auctions NFTs, finalizes auctions        |
+| **Bidder 1** | `signers[2]` | `BIDDER1_PRIVATE_KEY`  | Bids on auctions (0.001 ETH), buys from marketplace       |
+| **Bidder 2** | `signers[3]` | `BIDDER2_PRIVATE_KEY`  | Bids on auctions (0.002 ETH)                               |
+| **Bidder 3** | `signers[4]` | `BIDDER3_PRIVATE_KEY`  | Bids on auctions (0.003 ETH) — highest bidder wins         |
 
 ## Project Structure
 
@@ -104,7 +106,9 @@ cp .env.example .env
 SEPOLIA_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/YOUR_ALCHEMY_API_KEY
 SEPOLIA_PRIVATE_KEY=your_owner_private_key_without_0x_prefix
 SELLER_PRIVATE_KEY=your_seller_private_key_without_0x_prefix
-BUYER_PRIVATE_KEY=your_buyer_private_key_without_0x_prefix
+BIDDER1_PRIVATE_KEY=your_bidder1_private_key_without_0x_prefix
+BIDDER2_PRIVATE_KEY=your_bidder2_private_key_without_0x_prefix
+BIDDER3_PRIVATE_KEY=your_bidder3_private_key_without_0x_prefix
 PINATA_JWT=your_pinata_jwt_key
 ETHERSCAN_API_KEY=your_etherscan_api_key
 ```

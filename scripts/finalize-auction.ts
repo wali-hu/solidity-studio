@@ -6,7 +6,7 @@ import { fileURLToPath } from "url";
 /**
  * Script to finalize an expired auction
  * Anyone can call this once the auction time has passed
- * Uses signers[0] (Owner) by default
+ * Uses signers[1] (Seller) by default
  * Usage: npx hardhat run scripts/finalize-auction.ts --network sepolia
  */
 
@@ -34,8 +34,8 @@ const auctionAddress = deploymentInfo.contracts.NFTAuction.address;
 console.log("Auction Address:", auctionAddress);
 
 const signers = await ethers.getSigners();
-const caller = signers[0]; // Anyone can finalize
-console.log("Finalizing with account:", caller.address);
+const caller = signers[1]; // Seller finalizes (anyone can call)
+console.log("Finalizing with account (Seller):", caller.address);
 
 // Get contract instance
 const NFTAuction = await ethers.getContractFactory("NFTAuction");

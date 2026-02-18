@@ -56,7 +56,7 @@ console.log(`\nListing Fee: ${ethers.formatEther(listingFee)} ETH`);
 // Configuration
 const TOKEN_ID = 0; // Change this to the token ID you want to auction
 const MIN_PRICE = ethers.parseEther("0.001"); // Minimum starting price
-const DURATION = 3600; // Auction duration in seconds (1 hour)
+const DURATION = 300; // Auction duration in seconds (5 minutes)
 
 console.log(`Token ID: ${TOKEN_ID}`);
 console.log(`Minimum Price: ${ethers.formatEther(MIN_PRICE)} ETH`);
