@@ -44,11 +44,10 @@ await marketplace.waitForDeployment();
 const marketplaceAddress = await marketplace.getAddress();
 console.log("NFTMarketplace deployed to:", marketplaceAddress);
 
-// Deploy Auction with same listing price
+// Deploy Auction (no listing fee — revenue from 2.5% commission only)
 console.log("\nDeploying NFTAuction...");
-console.log("Auction Listing Price:", ethers.formatEther(LISTING_PRICE), "ETH");
 const NFTAuction = await ethers.getContractFactory("NFTAuction");
-const auction = await NFTAuction.deploy(LISTING_PRICE);
+const auction = await NFTAuction.deploy();
 await auction.waitForDeployment();
 const auctionAddress = await auction.getAddress();
 console.log("NFTAuction deployed to:", auctionAddress);
@@ -105,5 +104,5 @@ console.log(
   `npx hardhat verify --network sepolia ${marketplaceAddress} "${LISTING_PRICE.toString()}"`
 );
 console.log(
-  `npx hardhat verify --network sepolia ${auctionAddress} "${LISTING_PRICE.toString()}"`
+  `npx hardhat verify --network sepolia ${auctionAddress}`
 );

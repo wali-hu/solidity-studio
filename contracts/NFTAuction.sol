@@ -8,6 +8,8 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 /**
  * @title NFTAuction
  * @dev Auction contract for NFTs with time-limited bidding.
+ *      No listing fee — sellers create auctions for free.
+ *      Revenue comes from 2.5% commission on the winning bid.
  *      One-shot finalization: finalizeAuction() handles everything —
  *      settlement, cancellation, bid refunds, and fee distribution.
  */
@@ -35,9 +37,6 @@ contract NFTAuction is ReentrancyGuard, Ownable {
     // Track bidders per auction for auto-refund on finalization
     mapping(uint256 => address[]) private _auctionBidders;
     mapping(uint256 => mapping(address => bool)) private _hasBid;
-
-    // Listing fee to create an auction
-    uint256 public listingPrice;
 
     // Platform fee percentage on sales (e.g., 250 = 2.5%)
     uint256 public platformFeePercentage = 250;
@@ -69,19 +68,11 @@ contract NFTAuction is ReentrancyGuard, Ownable {
 
     event BidRefunded(address indexed bidder, uint256 amount);
 
-    event ListingPriceUpdated(uint256 oldPrice, uint256 newPrice);
-
-    /**
-     * @param _listingPrice The fee (in wei) sellers must pay to create an auction
-     */
-    constructor(uint256 _listingPrice) Ownable(msg.sender) {
-        require(_listingPrice > 0, "Listing price must be greater than 0");
-        listingPrice = _listingPrice;
-    }
+    constructor() Ownable(msg.sender) {}
 
     /**
      * @dev Creates a new auction. NFT is transferred to contract as escrow.
-     *      Listing fee is sent directly to the contract owner.
+     *      No listing fee required.
      * @param nftContract Address of the NFT contract
      * @param tokenId Token ID to auction
      * @param minPrice Minimum starting price (reserve price)
@@ -92,12 +83,11 @@ contract NFTAuction is ReentrancyGuard, Ownable {
         uint256 tokenId,
         uint256 minPrice,
         uint256 duration
-    ) external payable nonReentrant returns (uint256) {
+    ) external nonReentrant returns (uint256) {
         require(nftContract != address(0), "Invalid NFT contract");
         require(minPrice > 0, "Min price must be greater than 0");
         require(duration > 0, "Duration must be greater than 0");
         require(duration <= 30 days, "Duration cannot exceed 30 days");
-        require(msg.value == listingPrice, "Must pay the listing fee");
 
         IERC721 nft = IERC721(nftContract);
         require(
@@ -112,10 +102,6 @@ contract NFTAuction is ReentrancyGuard, Ownable {
 
         // Transfer NFT to auction contract (escrow)
         nft.transferFrom(msg.sender, address(this), tokenId);
-
-        // Send listing fee directly to owner
-        (bool feeSuccess, ) = payable(owner()).call{value: msg.value}("");
-        require(feeSuccess, "Listing fee transfer to owner failed");
 
         uint256 auctionId = _auctionIdCounter;
         _auctionIdCounter++;
@@ -300,19 +286,6 @@ contract NFTAuction is ReentrancyGuard, Ownable {
     }
 
     /**
-     * @dev Updates the listing fee for future auctions (only owner)
-     * @param newListingPrice New listing fee in wei
-     */
-    function updateListingPrice(uint256 newListingPrice) external onlyOwner {
-        require(newListingPrice > 0, "Listing price must be greater than 0");
-
-        uint256 oldPrice = listingPrice;
-        listingPrice = newListingPrice;
-
-        emit ListingPriceUpdated(oldPrice, newListingPrice);
-    }
-
-    /**
      * @dev Updates the platform fee percentage (only owner)
      * @param newFeePercentage New fee percentage (e.g., 250 = 2.5%)
      */
@@ -339,13 +312,6 @@ contract NFTAuction is ReentrancyGuard, Ownable {
      */
     function totalAuctions() external view returns (uint256) {
         return _auctionIdCounter;
-    }
-
-    /**
-     * @dev Returns the current listing fee
-     */
-    function getListingPrice() external view returns (uint256) {
-        return listingPrice;
     }
 
     /**

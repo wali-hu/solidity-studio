@@ -1,6 +1,6 @@
 # Auction Based NFT Marketplace 
 
-A complete NFT marketplace and auction system built with Hardhat 3, Solidity, and TypeScript. This project allows anyone to mint NFTs, sellers to list them for fixed-price sale or time-limited auctions, buyers to purchase or bid on NFTs, and the marketplace owner to collect commissions and listing fees.
+A complete NFT marketplace and auction system built with Hardhat 3, Solidity, and TypeScript. This project allows anyone to mint NFTs, sellers to list them for fixed-price sale or time-limited auctions, buyers to purchase or bid on NFTs, and the marketplace owner to collect commissions.
 
 ## Features
 
@@ -24,13 +24,13 @@ A complete NFT marketplace and auction system built with Hardhat 3, Solidity, an
   - Reentrancy protection
 
 - **Auction Contract** (`contracts/NFTAuction.sol`)
+  - No listing fee — creating an auction is free for sellers
   - Time-limited auctions with configurable duration (up to 30 days)
   - Minimum price (reserve price) set by seller
   - Competitive bidding — highest bid wins
   - One-shot `finalizeAuction()` — single function handles settlement, cancellation, refunds, and fee distribution
   - NFT escrow during auction
-  - Listing fee sent directly to owner on auction creation (no accumulation)
-  - Automatic commission deduction and direct payout to owner on finalization
+  - Platform commission (2.5% default) deducted from winning bid and sent directly to owner on finalization
   - Auto-refund of all outbid bidders during finalization (with safety `withdraw()` fallback)
   - Cancel auction if no bids placed (seller can cancel anytime)
   - Only seller can finalize
@@ -48,7 +48,7 @@ The project uses six separate wallets:
 | **Bidder 1** | `signers[2]` | `BIDDER1_PRIVATE_KEY`  | Bids on auctions (0.001 ETH), buys from marketplace       |
 | **Bidder 2** | `signers[3]` | `BIDDER2_PRIVATE_KEY`  | Bids on auctions (0.002 ETH)                               |
 | **Bidder 3** | `signers[4]` | `BIDDER3_PRIVATE_KEY`  | Bids on auctions (0.003 ETH) — highest bidder wins         |
-| **Bidder 4** | `signers[5]` | `BIDDER4_PRIVATE_KEY`  | Tests bidding after auction expiry                          |
+| **Bidder 4** | `signers[5]` | `BIDDER4_PRIVATE_KEY`  | Tests bidding after expiry / finalize before expiry         |
 
 ## Project Structure
 
@@ -68,11 +68,12 @@ NFT-Marketpalce/
 │   ├── create-auction.ts        # Create an auction (Seller)
 │   ├── place-bid.ts             # Place a bid on auction (Buyer)
 │   ├── finalize-auction.ts      # Finalize auction — one-shot settlement (Seller)
-│   ├── bid-after-expiry.ts      # Test bidding after expiry (Bidder 4)
+│   ├── bid-after-expiry.ts      # Test bidding after expiry — on-chain revert (Bidder 4)
+│   ├── finalize-before-expiry.ts # Test finalize before expiry — on-chain revert (Seller)
 │   └── upload-metadata.ts       # Upload metadata to IPFS via Pinata
 ├── test/
-│   ├── NFTMarketplace.test.ts   # Marketplace tests (50 tests)
-│   └── NFTAuction.test.ts       # Auction tests (48 tests)
+│   ├── NFTMarketplace.test.ts   # Marketplace tests (51 tests)
+│   └── NFTAuction.test.ts       # Auction tests (43 tests)
 ├── metadata/
 │   ├── legendary-dragon.json
 │   ├── mythical-phoenix.json
@@ -148,12 +149,12 @@ ETHERSCAN_API_KEY=your_etherscan_api_key
 
 ### NFTAuction
 
-- **Listing fee**: Sellers pay a small fee to create an auction (0.0001 ETH default), sent directly to owner
+- **No listing fee**: Creating an auction is completely free for sellers
 - **Reserve price**: Seller sets minimum starting bid
 - **Duration**: Configurable auction length (up to 30 days)
 - **Competitive bidding**: Each bid must exceed the current highest bid
 - **Bidder tracking**: All bidders are tracked per auction for automatic refund processing
-- **Commission**: 2.5% of winning bid sent directly to the contract owner on finalization
+- **Commission**: 2.5% of winning bid deducted and sent directly to the contract owner on finalization
 - **One-shot finalization**: Single `finalizeAuction()` call handles everything
 - **Cancel**: Seller can cancel anytime if no bids have been placed
 - **Safety withdraw**: Fallback `withdraw()` if auto-refund fails during finalization
@@ -162,7 +163,7 @@ ETHERSCAN_API_KEY=your_etherscan_api_key
 #### How an Auction Works
 
 1. Seller mints an NFT
-2. Seller approves the auction contract and creates an auction (pays listing fee — sent directly to owner, sets min price + duration)
+2. Seller approves the auction contract and creates an auction (no fee required, sets min price + duration)
 3. NFT is transferred to the auction contract (escrow)
 4. Bidders place bids (must be >= min price and > current highest bid)
 5. Previous highest bidder's funds are added to `pendingReturns` and bidder is tracked for auto-refund
@@ -182,7 +183,7 @@ ETHERSCAN_API_KEY=your_etherscan_api_key
 npx hardhat compile
 ```
 
-### 2. Run Tests (98 tests)
+### 2. Run Tests (94 tests)
 
 ```bash
 npx hardhat test
@@ -248,7 +249,7 @@ npx hardhat run scripts/withdraw.ts --network sepolia
 npx hardhat run scripts/create-auction.ts --network sepolia
 ```
 
-Edit `TOKEN_ID`, `MIN_PRICE`, and `DURATION` in `scripts/create-auction.ts`.
+Edit `TOKEN_ID`, `MIN_PRICE`, and `DURATION` in `scripts/create-auction.ts`. No listing fee is charged — creating an auction is free.
 
 ### 11. Place a Bid on Auction (Buyer)
 
@@ -266,13 +267,21 @@ npx hardhat run scripts/finalize-auction.ts --network sepolia
 
 Edit `AUCTION_ID` in `scripts/finalize-auction.ts`. Only the seller can finalize. If bids exist, can only finalize after the auction timer expires. If no bids, seller can cancel anytime. One transaction handles everything: NFT transfer, seller payment, owner commission, and outbid bidder refunds.
 
-### 13. Test Bidding After Expiry (Bidder 4)
+### 13. Test Bidding After Expiry — On-Chain Revert (Bidder 4)
 
 ```bash
 npx hardhat run scripts/bid-after-expiry.ts --network sepolia
 ```
 
-Uses Bidder 4 (signers[5]) to attempt a bid on an expired auction. The transaction reverts with "Auction has expired". Edit `AUCTION_ID` in the script. Run this after the 5-minute auction duration has passed but before finalizing.
+Uses Bidder 4 (signers[5]) to attempt a bid on an expired auction. Sends a real on-chain transaction with a manual `gasLimit` to bypass ethers.js pre-flight gas estimation. The transaction gets mined but **reverts on-chain** with "Auction has expired" — visible as a failed transaction on Sepolia Etherscan. Edit `AUCTION_ID` in the script. Run this after the 5-minute auction duration has passed but before finalizing.
+
+### 14. Test Finalize Before Expiry — On-Chain Revert (Seller)
+
+```bash
+npx hardhat run scripts/finalize-before-expiry.ts --network sepolia
+```
+
+Seller (signers[1]) attempts to finalize an auction before the time has expired (while bids exist). Sends a real on-chain transaction with a manual `gasLimit` to bypass ethers.js pre-flight gas estimation. The transaction gets mined but **reverts on-chain** with "Auction has not expired yet" — visible as a failed transaction on Sepolia Etherscan. Edit `AUCTION_ID` in the script. Run this while the auction is still active (before the 5-minute timer expires) and after at least one bid has been placed.
 
 ## Contract Verification
 
@@ -285,8 +294,8 @@ npx hardhat verify --network sepolia <NFT_ADDRESS> "Awesome NFT Collection" "ANF
 # Verify Marketplace (pass the listing price in wei)
 npx hardhat verify --network sepolia <MARKETPLACE_ADDRESS> "100000000000000"
 
-# Verify Auction (pass the listing price in wei)
-npx hardhat verify --network sepolia <AUCTION_ADDRESS> "100000000000000"
+# Verify Auction (no constructor arguments)
+npx hardhat verify --network sepolia <AUCTION_ADDRESS>
 ```
 
 The deployment script will print the exact verification commands.
@@ -308,12 +317,14 @@ Each metadata file includes:
 
 ## Platform Fees
 
-- **Listing fee**: 0.0001 ETH (paid by seller when listing or creating auction)
-- **Sale/auction commission**: 2.5% of sale/winning bid (deducted from payment)
+- **Marketplace listing fee**: 0.0001 ETH (paid by seller when listing on the marketplace)
+- **Auction listing fee**: None — creating an auction is free
+- **Marketplace commission**: 2.5% of sale price (deducted from payment)
+- **Auction commission**: 2.5% of winning bid (deducted from winning bid on finalization)
 - Maximum allowed commission: 10%
-- Only contract owner can change the fee and listing price
-- **Marketplace**: Fees accumulate in the contract — owner can withdraw
-- **Auction**: Listing fee and commission are sent directly to the owner (no accumulation)
+- Only contract owner can change the commission percentage
+- **Marketplace**: Listing fees and commissions accumulate in the contract — owner can withdraw
+- **Auction**: Commission is sent directly to the owner on finalization (no accumulation)
 
 ## Security Features
 
@@ -334,7 +345,7 @@ Before listing/auctioning an NFT, you must approve the contract to transfer your
 
 ### "Must pay the listing fee"
 
-When listing or creating an auction, the seller must send exactly the listing fee as `msg.value`. The scripts handle this automatically.
+When listing on the marketplace, the seller must send exactly the listing fee as `msg.value`. The scripts handle this automatically. Note: auctions do not require any listing fee.
 
 ### "Insufficient balance" when buying or bidding
 

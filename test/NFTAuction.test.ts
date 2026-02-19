@@ -16,7 +16,6 @@ describe("NFTAuction", function () {
   const NFT_NAME = "Test NFT Collection";
   const NFT_SYMBOL = "TNFT";
   const TOKEN_URI = "ipfs://QmTest/metadata.json";
-  const LISTING_PRICE = ethers.parseEther("0.0001");
   const MIN_PRICE = ethers.parseEther("0.001");
   const DURATION = 3600; // 1 hour
 
@@ -29,7 +28,7 @@ describe("NFTAuction", function () {
     await nftCollection.waitForDeployment();
 
     const NFTAuctionFactory = await ethers.getContractFactory("NFTAuction");
-    auction = await NFTAuctionFactory.deploy(LISTING_PRICE);
+    auction = await NFTAuctionFactory.deploy();
     await auction.waitForDeployment();
   });
 
@@ -54,8 +53,7 @@ describe("NFTAuction", function () {
         await nftCollection.getAddress(),
         tokenId,
         minPrice,
-        duration,
-        { value: LISTING_PRICE }
+        duration
       );
     const receipt = await tx.wait();
     const event = receipt?.logs.find((log: any) => {
@@ -86,20 +84,8 @@ describe("NFTAuction", function () {
       expect(await auction.owner()).to.equal(owner.address);
     });
 
-    it("Should set the listing price", async function () {
-      expect(await auction.listingPrice()).to.equal(LISTING_PRICE);
-      expect(await auction.getListingPrice()).to.equal(LISTING_PRICE);
-    });
-
     it("Should set initial platform fee to 2.5%", async function () {
       expect(await auction.platformFeePercentage()).to.equal(250);
-    });
-
-    it("Should revert if listing price is 0", async function () {
-      const Factory = await ethers.getContractFactory("NFTAuction");
-      await expect(Factory.deploy(0)).to.be.revertedWith(
-        "Listing price must be greater than 0"
-      );
     });
   });
 
@@ -119,8 +105,7 @@ describe("NFTAuction", function () {
           await nftCollection.getAddress(),
           0,
           MIN_PRICE,
-          DURATION,
-          { value: LISTING_PRICE }
+          DURATION
         );
 
       await expect(tx).to.emit(auction, "AuctionCreated");
@@ -145,8 +130,7 @@ describe("NFTAuction", function () {
           await nftCollection.getAddress(),
           0,
           MIN_PRICE,
-          DURATION,
-          { value: LISTING_PRICE }
+          DURATION
         );
 
       expect(await nftCollection.ownerOf(0)).to.equal(
@@ -154,43 +138,27 @@ describe("NFTAuction", function () {
       );
     });
 
-    it("Should send listing fee directly to owner", async function () {
+    it("Should not charge any listing fee", async function () {
       await nftCollection
         .connect(seller)
         .setApprovalForAll(await auction.getAddress(), true);
 
-      const ownerBalBefore = await ethers.provider.getBalance(owner.address);
+      const sellerBalBefore = await ethers.provider.getBalance(seller.address);
 
-      await auction
+      const tx = await auction
         .connect(seller)
         .createAuction(
           await nftCollection.getAddress(),
           0,
           MIN_PRICE,
-          DURATION,
-          { value: LISTING_PRICE }
+          DURATION
         );
+      const receipt = await tx.wait();
+      const gasUsed = BigInt(receipt!.gasUsed.toString()) * receipt!.gasPrice;
 
-      const ownerBalAfter = await ethers.provider.getBalance(owner.address);
-      expect(ownerBalAfter - ownerBalBefore).to.equal(LISTING_PRICE);
-    });
-
-    it("Should revert if listing fee is incorrect", async function () {
-      await nftCollection
-        .connect(seller)
-        .setApprovalForAll(await auction.getAddress(), true);
-
-      await expect(
-        auction
-          .connect(seller)
-          .createAuction(
-            await nftCollection.getAddress(),
-            0,
-            MIN_PRICE,
-            DURATION,
-            { value: 0 }
-          )
-      ).to.be.revertedWith("Must pay the listing fee");
+      const sellerBalAfter = await ethers.provider.getBalance(seller.address);
+      // Only gas was spent, no listing fee
+      expect(sellerBalBefore - sellerBalAfter).to.equal(gasUsed);
     });
 
     it("Should revert if min price is 0", async function () {
@@ -201,9 +169,7 @@ describe("NFTAuction", function () {
       await expect(
         auction
           .connect(seller)
-          .createAuction(await nftCollection.getAddress(), 0, 0, DURATION, {
-            value: LISTING_PRICE,
-          })
+          .createAuction(await nftCollection.getAddress(), 0, 0, DURATION)
       ).to.be.revertedWith("Min price must be greater than 0");
     });
 
@@ -219,8 +185,7 @@ describe("NFTAuction", function () {
             await nftCollection.getAddress(),
             0,
             MIN_PRICE,
-            0,
-            { value: LISTING_PRICE }
+            0
           )
       ).to.be.revertedWith("Duration must be greater than 0");
     });
@@ -238,8 +203,7 @@ describe("NFTAuction", function () {
             await nftCollection.getAddress(),
             0,
             MIN_PRICE,
-            thirtyOneDays,
-            { value: LISTING_PRICE }
+            thirtyOneDays
           )
       ).to.be.revertedWith("Duration cannot exceed 30 days");
     });
@@ -256,8 +220,7 @@ describe("NFTAuction", function () {
             await nftCollection.getAddress(),
             0,
             MIN_PRICE,
-            DURATION,
-            { value: LISTING_PRICE }
+            DURATION
           )
       ).to.be.revertedWith("Not the owner of this NFT");
     });
@@ -270,8 +233,7 @@ describe("NFTAuction", function () {
             await nftCollection.getAddress(),
             0,
             MIN_PRICE,
-            DURATION,
-            { value: LISTING_PRICE }
+            DURATION
           )
       ).to.be.revertedWith("Auction contract not approved");
     });
@@ -280,9 +242,7 @@ describe("NFTAuction", function () {
       await expect(
         auction
           .connect(seller)
-          .createAuction(ethers.ZeroAddress, 0, MIN_PRICE, DURATION, {
-            value: LISTING_PRICE,
-          })
+          .createAuction(ethers.ZeroAddress, 0, MIN_PRICE, DURATION)
       ).to.be.revertedWith("Invalid NFT contract");
     });
   });
@@ -607,22 +567,6 @@ describe("NFTAuction", function () {
   });
 
   describe("Admin Functions", function () {
-    it("Should allow owner to update listing price", async function () {
-      const newPrice = ethers.parseEther("0.0002");
-
-      await expect(auction.updateListingPrice(newPrice))
-        .to.emit(auction, "ListingPriceUpdated")
-        .withArgs(LISTING_PRICE, newPrice);
-
-      expect(await auction.getListingPrice()).to.equal(newPrice);
-    });
-
-    it("Should revert if non-owner updates listing price", async function () {
-      await expect(
-        auction.connect(seller).updateListingPrice(ethers.parseEther("0.0002"))
-      ).to.be.revertedWithCustomError(auction, "OwnableUnauthorizedAccount");
-    });
-
     it("Should allow owner to set platform fee", async function () {
       await auction.setPlatformFee(500); // 5%
       expect(await auction.platformFeePercentage()).to.equal(500);
@@ -632,6 +576,12 @@ describe("NFTAuction", function () {
       await expect(auction.setPlatformFee(1001)).to.be.revertedWith(
         "Fee cannot exceed 10%"
       );
+    });
+
+    it("Should revert if non-owner sets platform fee", async function () {
+      await expect(
+        auction.connect(seller).setPlatformFee(500)
+      ).to.be.revertedWithCustomError(auction, "OwnableUnauthorizedAccount");
     });
   });
 

@@ -5,16 +5,16 @@
   "listingPrice": "100000000000000",
   "contracts": {
     "NFTCollection": {
-      "address": "0x01e6D098C923921E88fD7E80B7AC3bCB79B17cbF",
+      "address": "0x2e2c56f458fBdd3EB3099B1Ef1ec0B7bE832C7e7",
       "name": "Awesome NFT Collection",
       "symbol": "ANFT"
     },
     "NFTMarketplace": {
-      "address": "0xC2299099D459e8630bf84BBef96c5654Cb292C31"
+      "address": "0xBfd40ddb28747B7b2C50c4aD694c2ffd876bd9Ac"
     },
     "NFTAuction": {
-      "address": "0xE5feF59E81f14F62Df4813f387Ea2e9af3E53C30"
+      "address": "0xDF46504998e801A53Db5951B889734DEc5907a25"
     }
   },
-  "timestamp": "2026-02-19T05:20:49.236Z"
+  "timestamp": "2026-02-19T06:51:37.123Z"
 }

@@ -5,7 +5,7 @@ import { fileURLToPath } from "url";
 
 /**
  * Script to create an auction for an NFT
- * Uses signers[1] (Seller) — pays listing fee and sets min price + duration
+ * Uses signers[1] (Seller) — no listing fee, just sets min price + duration
  * Usage: npx hardhat run scripts/create-auction.ts --network sepolia
  */
 
@@ -49,16 +49,12 @@ const nftCollection = NFTCollection.attach(nftAddress);
 const NFTAuction = await ethers.getContractFactory("NFTAuction");
 const auctionContract = NFTAuction.attach(auctionAddress);
 
-// Get listing fee
-const listingFee = await auctionContract.getListingPrice();
-console.log(`\nListing Fee: ${ethers.formatEther(listingFee)} ETH`);
-
 // Configuration
-const TOKEN_ID = 0; // Change this to the token ID you want to auction
+const TOKEN_ID = 1; // Change this to the token ID you want to auction
 const MIN_PRICE = ethers.parseEther("0.001"); // Minimum starting price
 const DURATION = 300; // Auction duration in seconds (5 minutes)
 
-console.log(`Token ID: ${TOKEN_ID}`);
+console.log(`\nToken ID: ${TOKEN_ID}`);
 console.log(`Minimum Price: ${ethers.formatEther(MIN_PRICE)} ETH`);
 console.log(`Duration: ${DURATION} seconds (${DURATION / 60} minutes)`);
 
@@ -92,13 +88,11 @@ if (
   console.log("Auction contract already approved");
 }
 
-// Create the auction
+// Create the auction (no listing fee required)
 console.log("\nCreating auction...");
 const createTx = await auctionContract
   .connect(seller)
-  .createAuction(nftAddress, TOKEN_ID, MIN_PRICE, DURATION, {
-    value: listingFee,
-  });
+  .createAuction(nftAddress, TOKEN_ID, MIN_PRICE, DURATION);
 const receipt = await createTx.wait();
 
 console.log(`Transaction hash: ${receipt?.hash}`);

@@ -4,24 +4,22 @@ import * as path from "path";
 import { fileURLToPath } from "url";
 
 /**
- * Script to test what happens when Bidder 4 (signers[5]) tries to bid
- * AFTER the auction has already expired or been finalized.
+ * Script to test what happens when the seller tries to finalize an auction
+ * BEFORE the auction time has expired (while bids exist).
  *
  * This sends a REAL on-chain transaction with a manual gasLimit to bypass
  * ethers.js pre-flight gas estimation. The transaction will be mined but
  * REVERT on-chain — visible as a failed transaction on Sepolia Etherscan.
  *
- * Expected on-chain revert reason:
- *   - "Auction has expired" (if auction expired but not yet finalized)
- *   - "Auction is not active" (if auction already finalized)
+ * Expected on-chain revert reason: "Auction has not expired yet"
  *
- * Usage: npx hardhat run scripts/bid-after-expiry.ts --network sepolia
+ * Usage: npx hardhat run scripts/finalize-before-expiry.ts --network sepolia
  */
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const { ethers } = await network.connect();
 
-console.log("=== Bid After Expiry Test (On-Chain Revert) ===\n");
+console.log("=== Finalize Before Expiry Test (On-Chain Revert) ===\n");
 console.log(
   "This script sends a REAL transaction that will REVERT on-chain.\n" +
   "The failed transaction will be visible on Sepolia Etherscan.\n"
@@ -46,17 +44,12 @@ const auctionAddress = deploymentInfo.contracts.NFTAuction.address;
 console.log("Auction Address:", auctionAddress);
 
 const signers = await ethers.getSigners();
-const bidder4 = signers[5];
+const seller = signers[1]; // Only seller can finalize
 
-if (!bidder4) {
-  console.error("Error: BIDDER4_PRIVATE_KEY not configured in .env");
-  process.exit(1);
-}
+console.log("Seller Address:", seller.address);
 
-console.log("Bidder 4 Address:", bidder4.address);
-
-const balance = await ethers.provider.getBalance(bidder4.address);
-console.log("Bidder 4 Balance:", ethers.formatEther(balance), "ETH");
+const balance = await ethers.provider.getBalance(seller.address);
+console.log("Seller Balance:", ethers.formatEther(balance), "ETH");
 
 // Get contract instance
 const NFTAuction = await ethers.getContractFactory("NFTAuction");
@@ -64,12 +57,20 @@ const auctionContract = NFTAuction.attach(auctionAddress);
 
 // Configuration
 const AUCTION_ID = 0; // Change this to the auction ID you want to test
-const BID_AMOUNT = ethers.parseEther("0.004"); // Higher than Bidder 3's 0.003 ETH
 
 console.log(`\nFetching auction ${AUCTION_ID}...`);
 
 // Get auction details
 const auction = await auctionContract.getAuction(AUCTION_ID);
+
+if (!auction.active) {
+  console.log("\nAuction is NOT active (already finalized or cancelled).");
+  console.log(
+    "The finalization would revert with: \"Auction is not active\""
+  );
+  console.log("\n=== Test Complete ===");
+  process.exit(0);
+}
 
 const endTime = Number(auction.endTime);
 const now = Math.floor(Date.now() / 1000);
@@ -84,42 +85,46 @@ console.log(
   hasBids ? ethers.formatEther(auction.highestBid) + " ETH" : "None"
 );
 console.log("Highest Bidder:", hasBids ? auction.highestBidder : "None (no bids)");
-console.log("Active:", auction.active);
-console.log("Ended:", auction.ended);
+console.log("End Time:", new Date(endTime * 1000).toLocaleString());
 
-if (!auction.active) {
-  console.log("\nAuction is NOT active (already finalized or cancelled).");
-  console.log("Expected on-chain revert: \"Auction is not active\"");
-} else if (now >= endTime) {
-  const expiredAgo = now - endTime;
+if (!hasBids) {
   console.log(
-    `\nAuction EXPIRED ${Math.floor(expiredAgo / 60)}m ${expiredAgo % 60}s ago`
+    "\nNo bids placed — finalizing without bids would CANCEL (not revert)."
   );
-  console.log("Expected on-chain revert: \"Auction has expired\"");
-} else {
-  const remaining = endTime - now;
   console.log(
-    `\nAuction is still ACTIVE — ${Math.floor(remaining / 60)}m ${remaining % 60}s remaining`
+    "Place bids first using place-bid.ts, then run this script BEFORE the 5-minute timer expires."
   );
-  console.log("WARNING: Auction has not expired yet. The bid might succeed!");
-  console.log("Wait for the auction to expire before running this script.");
   console.log("======================\n");
   process.exit(0);
 }
+
+if (now >= endTime) {
+  console.log("\nAuction has already EXPIRED — finalization would SUCCEED.");
+  console.log(
+    "This test only works while the auction is still active (before expiry)."
+  );
+  console.log("======================\n");
+  process.exit(0);
+}
+
+const remaining = endTime - now;
+console.log(
+  `\nAuction still ACTIVE — ${Math.floor(remaining / 60)}m ${remaining % 60}s remaining`
+);
 console.log("======================\n");
 
 // Send the transaction with a manual gasLimit to force it on-chain.
 // Normally ethers.js would catch the revert during gas estimation (pre-flight)
 // and throw before broadcasting. By setting gasLimit manually, we skip
 // the estimation and the tx gets mined — but reverts on-chain.
-console.log(`Bidder 4 sending ${ethers.formatEther(BID_AMOUNT)} ETH bid...`);
+console.log("Seller attempting to finalize auction before expiry...");
 console.log("Using manual gasLimit to force on-chain execution...");
-console.log("Expected: Transaction REVERTS on-chain\n");
+console.log("Expected: Transaction REVERTS on-chain with \"Auction has not expired yet\"\n");
 
 try {
   const tx = await auctionContract
-    .connect(bidder4)
-    .placeBid(AUCTION_ID, { value: BID_AMOUNT, gasLimit: 200000 });
+    .connect(seller)
+    .finalizeAuction(AUCTION_ID, { gasLimit: 200000 });
 
   console.log("Transaction sent! Hash:", tx.hash);
   console.log("Waiting for confirmation...\n");
@@ -151,8 +156,8 @@ try {
   }
 }
 
-const balanceAfter = await ethers.provider.getBalance(bidder4.address);
-console.log("\nBidder 4 Balance After:", ethers.formatEther(balanceAfter), "ETH");
-console.log("(Only gas was spent — bid ETH was NOT deducted)");
+const balanceAfter = await ethers.provider.getBalance(seller.address);
+console.log("\nSeller Balance After:", ethers.formatEther(balanceAfter), "ETH");
+console.log("(Only gas was spent — auction state unchanged)");
 
-console.log("\n=== Bid After Expiry Test Complete ===");
+console.log("\n=== Finalize Before Expiry Test Complete ===");
