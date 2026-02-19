@@ -7,12 +7,9 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 
 /**
  * @title NFTAuction
- * @dev Auction contract for NFTs with time-limited bidding
- *      - Seller creates an auction with a minimum price and duration
- *      - Bidders place bids; highest bid wins when auction ends
- *      - Uses pull-over-push pattern for safe bid refunds
- *      - Commission deducted from winning bid; NFT transferred to winner
- *      - Seller pays a listing fee to create an auction
+ * @dev Auction contract for NFTs with time-limited bidding.
+ *      One-shot finalization: finalizeAuction() handles everything —
+ *      settlement, cancellation, bid refunds, and fee distribution.
  */
 contract NFTAuction is ReentrancyGuard, Ownable {
     struct Auction {
@@ -32,8 +29,12 @@ contract NFTAuction is ReentrancyGuard, Ownable {
     mapping(uint256 => Auction) public auctions;
     uint256 private _auctionIdCounter;
 
-    // Pull-over-push: pending returns for outbid bidders
+    // Pending returns for outbid bidders
     mapping(address => uint256) public pendingReturns;
+
+    // Track bidders per auction for auto-refund on finalization
+    mapping(uint256 => address[]) private _auctionBidders;
+    mapping(uint256 => mapping(address => bool)) private _hasBid;
 
     // Listing fee to create an auction
     uint256 public listingPrice;
@@ -41,9 +42,6 @@ contract NFTAuction is ReentrancyGuard, Ownable {
     // Platform fee percentage on sales (e.g., 250 = 2.5%)
     uint256 public platformFeePercentage = 250;
     uint256 private constant FEE_DENOMINATOR = 10000;
-
-    // Accumulated platform fees
-    uint256 public accumulatedFees;
 
     event AuctionCreated(
         uint256 indexed auctionId,
@@ -69,9 +67,7 @@ contract NFTAuction is ReentrancyGuard, Ownable {
 
     event AuctionCancelled(uint256 indexed auctionId);
 
-    event BidWithdrawn(address indexed bidder, uint256 amount);
-
-    event FeesWithdrawn(address indexed owner, uint256 amount);
+    event BidRefunded(address indexed bidder, uint256 amount);
 
     event ListingPriceUpdated(uint256 oldPrice, uint256 newPrice);
 
@@ -85,6 +81,7 @@ contract NFTAuction is ReentrancyGuard, Ownable {
 
     /**
      * @dev Creates a new auction. NFT is transferred to contract as escrow.
+     *      Listing fee is sent directly to the contract owner.
      * @param nftContract Address of the NFT contract
      * @param tokenId Token ID to auction
      * @param minPrice Minimum starting price (reserve price)
@@ -116,8 +113,9 @@ contract NFTAuction is ReentrancyGuard, Ownable {
         // Transfer NFT to auction contract (escrow)
         nft.transferFrom(msg.sender, address(this), tokenId);
 
-        // Accumulate listing fee
-        accumulatedFees += msg.value;
+        // Send listing fee directly to owner
+        (bool feeSuccess, ) = payable(owner()).call{value: msg.value}("");
+        require(feeSuccess, "Listing fee transfer to owner failed");
 
         uint256 auctionId = _auctionIdCounter;
         _auctionIdCounter++;
@@ -156,6 +154,7 @@ contract NFTAuction is ReentrancyGuard, Ownable {
      * @dev Places a bid on an active auction.
      *      Bid must be higher than current highest bid and >= minPrice.
      *      Previous highest bidder's funds are added to pendingReturns.
+     *      Bidder is tracked for auto-refund on finalization.
      * @param auctionId ID of the auction
      */
     function placeBid(uint256 auctionId) external payable nonReentrant {
@@ -171,7 +170,13 @@ contract NFTAuction is ReentrancyGuard, Ownable {
             "Bid must be higher than current highest bid"
         );
 
-        // Refund previous highest bidder via pull pattern
+        // Track bidder for auto-refund during finalization
+        if (!_hasBid[auctionId][msg.sender]) {
+            _auctionBidders[auctionId].push(msg.sender);
+            _hasBid[auctionId][msg.sender] = true;
+        }
+
+        // Store previous highest bidder's funds for refund
         if (auction.highestBidder != address(0)) {
             pendingReturns[auction.highestBidder] += auction.highestBid;
         }
@@ -183,119 +188,115 @@ contract NFTAuction is ReentrancyGuard, Ownable {
     }
 
     /**
-     * @dev Finalizes an auction after the time has expired.
-     *      Transfers NFT to winner and funds to seller (minus commission).
-     *      Anyone can call this once the auction time has passed.
-     * @param auctionId ID of the auction
+     * @dev One-shot finalization — handles everything in a single call:
+     *
+     *      IF BIDS EXIST (and auction time expired):
+     *        1. Transfers NFT to the highest bidder (winner)
+     *        2. Sends sale proceeds to seller (minus 2.5% commission)
+     *        3. Sends commission directly to contract owner
+     *        4. Auto-refunds ALL outbid bidders their ETH
+     *
+     *      IF NO BIDS (cancel — can be called anytime):
+     *        1. Returns NFT from escrow back to seller
+     *
+     *      Only the seller can call this function.
+     *
+     * @param auctionId ID of the auction to finalize
      */
     function finalizeAuction(uint256 auctionId) external nonReentrant {
         Auction storage auction = auctions[auctionId];
 
         require(auction.active, "Auction is not active");
         require(!auction.ended, "Auction already finalized");
-        require(
-            block.timestamp >= auction.endTime,
-            "Auction has not expired yet"
-        );
+        require(auction.seller == msg.sender, "Only seller can finalize");
 
         auction.ended = true;
         auction.active = false;
 
-        if (auction.highestBidder != address(0)) {
-            // We have a winner
-            uint256 commission = (auction.highestBid * platformFeePercentage) /
-                FEE_DENOMINATOR;
-            uint256 sellerProceeds = auction.highestBid - commission;
-
-            accumulatedFees += commission;
-
-            // Transfer NFT to winner
-            IERC721(auction.nftContract).transferFrom(
-                address(this),
-                auction.highestBidder,
-                auction.tokenId
-            );
-
-            // Transfer funds to seller
-            (bool success, ) = auction.seller.call{value: sellerProceeds}("");
-            require(success, "Transfer to seller failed");
-
-            emit AuctionFinalized(
-                auctionId,
-                auction.highestBidder,
-                auction.highestBid
-            );
-        } else {
-            // No bids — return NFT to seller
+        // === NO BIDS: Cancel — return NFT to seller ===
+        if (auction.highestBidder == address(0)) {
             IERC721(auction.nftContract).transferFrom(
                 address(this),
                 auction.seller,
                 auction.tokenId
             );
 
-            emit AuctionFinalized(auctionId, address(0), 0);
+            emit AuctionCancelled(auctionId);
+            return;
         }
-    }
 
-    /**
-     * @dev Cancels an auction. Only the seller can cancel, and only if no bids placed.
-     *      Returns the NFT from escrow to the seller.
-     * @param auctionId ID of the auction to cancel
-     */
-    function cancelAuction(uint256 auctionId) external nonReentrant {
-        Auction storage auction = auctions[auctionId];
-
-        require(auction.active, "Auction is not active");
-        require(!auction.ended, "Auction already finalized");
-        require(auction.seller == msg.sender, "Not the seller");
+        // === BIDS EXIST: Must wait for auction to expire ===
         require(
-            auction.highestBidder == address(0),
-            "Cannot cancel auction with bids"
+            block.timestamp >= auction.endTime,
+            "Auction has not expired yet"
         );
 
-        auction.active = false;
-        auction.ended = true;
+        // Calculate commission
+        uint256 commission = (auction.highestBid * platformFeePercentage) /
+            FEE_DENOMINATOR;
+        uint256 sellerProceeds = auction.highestBid - commission;
 
-        // Return NFT to seller
+        // 1. Transfer NFT to winner
         IERC721(auction.nftContract).transferFrom(
             address(this),
-            msg.sender,
+            auction.highestBidder,
             auction.tokenId
         );
 
-        emit AuctionCancelled(auctionId);
+        // 2. Transfer proceeds to seller
+        (bool sellerSuccess, ) = auction.seller.call{value: sellerProceeds}(
+            ""
+        );
+        require(sellerSuccess, "Transfer to seller failed");
+
+        // 3. Transfer commission to owner
+        if (commission > 0) {
+            (bool ownerSuccess, ) = payable(owner()).call{value: commission}(
+                ""
+            );
+            require(ownerSuccess, "Commission transfer to owner failed");
+        }
+
+        // 4. Auto-refund all outbid bidders
+        address[] memory bidders = _auctionBidders[auctionId];
+        for (uint256 i = 0; i < bidders.length; i++) {
+            address bidder = bidders[i];
+            uint256 amount = pendingReturns[bidder];
+            if (amount > 0) {
+                pendingReturns[bidder] = 0;
+                (bool refundSuccess, ) = payable(bidder).call{value: amount}(
+                    ""
+                );
+                if (refundSuccess) {
+                    emit BidRefunded(bidder, amount);
+                } else {
+                    // Restore on failure — bidder can use safety withdraw()
+                    pendingReturns[bidder] = amount;
+                }
+            }
+        }
+
+        emit AuctionFinalized(
+            auctionId,
+            auction.highestBidder,
+            auction.highestBid
+        );
     }
 
     /**
-     * @dev Withdraws pending returns for outbid bidders (pull-over-push pattern).
-     *      This is the safe way to refund — prevents reentrancy attacks.
+     * @dev Safety fallback: if auto-refund failed during finalization,
+     *      the bidder can manually withdraw their pending returns.
      */
     function withdraw() external nonReentrant {
         uint256 amount = pendingReturns[msg.sender];
         require(amount > 0, "No funds to withdraw");
 
-        // Zero out before transfer to prevent reentrancy
         pendingReturns[msg.sender] = 0;
 
         (bool success, ) = payable(msg.sender).call{value: amount}("");
         require(success, "Withdrawal failed");
 
-        emit BidWithdrawn(msg.sender, amount);
-    }
-
-    /**
-     * @dev Withdraws accumulated platform fees (only owner)
-     */
-    function withdrawFees() external onlyOwner nonReentrant {
-        uint256 amount = accumulatedFees;
-        require(amount > 0, "No fees to withdraw");
-
-        accumulatedFees = 0;
-
-        (bool success, ) = payable(owner()).call{value: amount}("");
-        require(success, "Withdrawal failed");
-
-        emit FeesWithdrawn(owner(), amount);
+        emit BidRefunded(msg.sender, amount);
     }
 
     /**
@@ -326,7 +327,6 @@ contract NFTAuction is ReentrancyGuard, Ownable {
 
     /**
      * @dev Returns auction details
-     * @param auctionId ID of the auction
      */
     function getAuction(
         uint256 auctionId
@@ -346,6 +346,15 @@ contract NFTAuction is ReentrancyGuard, Ownable {
      */
     function getListingPrice() external view returns (uint256) {
         return listingPrice;
+    }
+
+    /**
+     * @dev Returns the list of bidders for an auction
+     */
+    function getAuctionBidders(
+        uint256 auctionId
+    ) external view returns (address[] memory) {
+        return _auctionBidders[auctionId];
     }
 
     /**
@@ -376,7 +385,6 @@ contract NFTAuction is ReentrancyGuard, Ownable {
 
     /**
      * @dev Fetches all auctions created by a specific seller
-     * @param user Address of the seller
      */
     function fetchAuctionsBySeller(
         address user
@@ -405,7 +413,6 @@ contract NFTAuction is ReentrancyGuard, Ownable {
 
     /**
      * @dev Fetches all auctions won by a specific user
-     * @param user Address of the winner
      */
     function fetchAuctionsWon(
         address user

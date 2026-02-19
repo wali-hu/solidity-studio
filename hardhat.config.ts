@@ -39,6 +39,7 @@ export default defineConfig({
         configVariable("BIDDER1_PRIVATE_KEY"),
         configVariable("BIDDER2_PRIVATE_KEY"),
         configVariable("BIDDER3_PRIVATE_KEY"),
+        configVariable("BIDDER4_PRIVATE_KEY"),
       ],
     },
   },

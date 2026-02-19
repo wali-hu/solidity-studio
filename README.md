@@ -27,16 +27,19 @@ A complete NFT marketplace and auction system built with Hardhat 3, Solidity, an
   - Time-limited auctions with configurable duration (up to 30 days)
   - Minimum price (reserve price) set by seller
   - Competitive bidding — highest bid wins
-  - Pull-over-push pattern for safe bid refunds (prevents reentrancy)
+  - One-shot `finalizeAuction()` — single function handles settlement, cancellation, refunds, and fee distribution
   - NFT escrow during auction
-  - Automatic commission deduction on finalization
-  - Cancel auction if no bids placed
-  - Anyone can finalize after auction expires
-  - View functions: active auctions, auctions by seller, auctions won by user
+  - Listing fee sent directly to owner on auction creation (no accumulation)
+  - Automatic commission deduction and direct payout to owner on finalization
+  - Auto-refund of all outbid bidders during finalization (with safety `withdraw()` fallback)
+  - Cancel auction if no bids placed (seller can cancel anytime)
+  - Only seller can finalize
+  - Bidder tracking per auction for automatic refund processing
+  - View functions: active auctions, auctions by seller, auctions won by user, auction bidders
 
 ## Accounts
 
-The project uses five separate wallets:
+The project uses six separate wallets:
 
 | Account      | Signer Index | Private Key Variable   | Role                                                       |
 | ------------ | ------------ | ---------------------- | ---------------------------------------------------------- |
@@ -45,6 +48,7 @@ The project uses five separate wallets:
 | **Bidder 1** | `signers[2]` | `BIDDER1_PRIVATE_KEY`  | Bids on auctions (0.001 ETH), buys from marketplace       |
 | **Bidder 2** | `signers[3]` | `BIDDER2_PRIVATE_KEY`  | Bids on auctions (0.002 ETH)                               |
 | **Bidder 3** | `signers[4]` | `BIDDER3_PRIVATE_KEY`  | Bids on auctions (0.003 ETH) — highest bidder wins         |
+| **Bidder 4** | `signers[5]` | `BIDDER4_PRIVATE_KEY`  | Tests bidding after auction expiry                          |
 
 ## Project Structure
 
@@ -63,12 +67,12 @@ NFT-Marketpalce/
 │   ├── withdraw.ts              # Withdraw marketplace fees (Owner)
 │   ├── create-auction.ts        # Create an auction (Seller)
 │   ├── place-bid.ts             # Place a bid on auction (Buyer)
-│   ├── finalize-auction.ts      # Finalize expired auction (Anyone)
-│   ├── withdraw-bid.ts          # Withdraw outbid funds (Bidder)
+│   ├── finalize-auction.ts      # Finalize auction — one-shot settlement (Seller)
+│   ├── bid-after-expiry.ts      # Test bidding after expiry (Bidder 4)
 │   └── upload-metadata.ts       # Upload metadata to IPFS via Pinata
 ├── test/
 │   ├── NFTMarketplace.test.ts   # Marketplace tests (50 tests)
-│   └── NFTAuction.test.ts       # Auction tests (51 tests)
+│   └── NFTAuction.test.ts       # Auction tests (48 tests)
 ├── metadata/
 │   ├── legendary-dragon.json
 │   ├── mythical-phoenix.json
@@ -82,7 +86,7 @@ NFT-Marketpalce/
 
 - Node.js (v18 or higher)
 - npm or yarn
-- MetaMask or another Ethereum wallet (3 accounts needed)
+- MetaMask or another Ethereum wallet (6 accounts needed)
 - Sepolia testnet ETH (get from [Sepolia Faucet](https://sepoliafaucet.com/))
 - Pinata account for IPFS storage
 
@@ -109,6 +113,7 @@ SELLER_PRIVATE_KEY=your_seller_private_key_without_0x_prefix
 BIDDER1_PRIVATE_KEY=your_bidder1_private_key_without_0x_prefix
 BIDDER2_PRIVATE_KEY=your_bidder2_private_key_without_0x_prefix
 BIDDER3_PRIVATE_KEY=your_bidder3_private_key_without_0x_prefix
+BIDDER4_PRIVATE_KEY=your_bidder4_private_key_without_0x_prefix
 PINATA_JWT=your_pinata_jwt_key
 ETHERSCAN_API_KEY=your_etherscan_api_key
 ```
@@ -143,28 +148,31 @@ ETHERSCAN_API_KEY=your_etherscan_api_key
 
 ### NFTAuction
 
-- **Listing fee**: Sellers pay a small fee to create an auction (0.0001 ETH default)
+- **Listing fee**: Sellers pay a small fee to create an auction (0.0001 ETH default), sent directly to owner
 - **Reserve price**: Seller sets minimum starting bid
 - **Duration**: Configurable auction length (up to 30 days)
 - **Competitive bidding**: Each bid must exceed the current highest bid
-- **Pull-over-push refunds**: Outbid bidders withdraw their funds safely (prevents reentrancy)
-- **Commission**: 2.5% of winning bid goes to the contract owner
-- **Cancel**: Seller can cancel if no bids have been placed
-- **Finalize**: Anyone can finalize once the auction timer expires
-- **View functions**: Fetch active auctions, auctions by seller, auctions won by user
+- **Bidder tracking**: All bidders are tracked per auction for automatic refund processing
+- **Commission**: 2.5% of winning bid sent directly to the contract owner on finalization
+- **One-shot finalization**: Single `finalizeAuction()` call handles everything
+- **Cancel**: Seller can cancel anytime if no bids have been placed
+- **Safety withdraw**: Fallback `withdraw()` if auto-refund fails during finalization
+- **View functions**: Fetch active auctions, auctions by seller, auctions won by user, auction bidders
 
 #### How an Auction Works
 
 1. Seller mints an NFT
-2. Seller approves the auction contract and creates an auction (pays listing fee, sets min price + duration)
+2. Seller approves the auction contract and creates an auction (pays listing fee — sent directly to owner, sets min price + duration)
 3. NFT is transferred to the auction contract (escrow)
 4. Bidders place bids (must be >= min price and > current highest bid)
-5. Previous highest bidder's funds are added to `pendingReturns` (pull-over-push pattern)
-6. After the auction timer expires, anyone calls `finalizeAuction()`
-7. Winner gets the NFT, seller gets the winning bid minus 2.5% commission
-8. If no bids were placed, NFT is returned to the seller
-9. Outbid bidders call `withdraw()` to reclaim their funds
-10. Owner can withdraw accumulated fees
+5. Previous highest bidder's funds are added to `pendingReturns` and bidder is tracked for auto-refund
+6. After the auction timer expires, **seller** calls `finalizeAuction()` — one transaction does everything:
+   - NFT transferred to the winner
+   - Seller receives the winning bid minus 2.5% commission
+   - Commission sent directly to the contract owner
+   - All outbid bidders are automatically refunded their ETH
+7. If no bids were placed, seller can call `finalizeAuction()` anytime to cancel and get the NFT back
+8. If auto-refund fails for any bidder, they can use the safety `withdraw()` fallback
 
 ## All Commands
 
@@ -174,7 +182,7 @@ ETHERSCAN_API_KEY=your_etherscan_api_key
 npx hardhat compile
 ```
 
-### 2. Run Tests (101 tests)
+### 2. Run Tests (98 tests)
 
 ```bash
 npx hardhat test
@@ -250,21 +258,21 @@ npx hardhat run scripts/place-bid.ts --network sepolia
 
 Edit `AUCTION_ID` and `BID_AMOUNT` in `scripts/place-bid.ts`.
 
-### 12. Finalize an Auction (Anyone)
+### 12. Finalize an Auction (Seller)
 
 ```bash
 npx hardhat run scripts/finalize-auction.ts --network sepolia
 ```
 
-Edit `AUCTION_ID` in `scripts/finalize-auction.ts`. Can only finalize after the auction timer expires.
+Edit `AUCTION_ID` in `scripts/finalize-auction.ts`. Only the seller can finalize. If bids exist, can only finalize after the auction timer expires. If no bids, seller can cancel anytime. One transaction handles everything: NFT transfer, seller payment, owner commission, and outbid bidder refunds.
 
-### 13. Withdraw Outbid Funds (Bidder)
+### 13. Test Bidding After Expiry (Bidder 4)
 
 ```bash
-npx hardhat run scripts/withdraw-bid.ts --network sepolia
+npx hardhat run scripts/bid-after-expiry.ts --network sepolia
 ```
 
-Withdraws pending returns for outbid bidders from the auction contract.
+Uses Bidder 4 (signers[5]) to attempt a bid on an expired auction. The transaction reverts with "Auction has expired". Edit `AUCTION_ID` in the script. Run this after the 5-minute auction duration has passed but before finalizing.
 
 ## Contract Verification
 
@@ -304,14 +312,15 @@ Each metadata file includes:
 - **Sale/auction commission**: 2.5% of sale/winning bid (deducted from payment)
 - Maximum allowed commission: 10%
 - Only contract owner can change the fee and listing price
-- Fees accumulate in each contract separately (marketplace + auction)
-- Only owner can withdraw accumulated fees from each contract
+- **Marketplace**: Fees accumulate in the contract — owner can withdraw
+- **Auction**: Listing fee and commission are sent directly to the owner (no accumulation)
 
 ## Security Features
 
 - **ReentrancyGuard**: Protection against reentrancy attacks on all contracts
 - **NFT Escrow**: NFTs are held by the contract during listing/auction
-- **Pull-over-Push Pattern**: Outbid bidders withdraw funds safely (auction)
+- **Auto-Refund with Safety Fallback**: Outbid bidders are auto-refunded on finalization; `withdraw()` exists as fallback if push fails
+- **Checks-Effects-Interactions**: State changes before external calls
 - **Access Control**: Owner-only functions for critical operations
 - **Input Validation**: Comprehensive checks on all parameters
 - **Duration Limits**: Maximum 30-day auction duration
@@ -333,19 +342,19 @@ Ensure your buyer wallet has enough Sepolia ETH to cover the NFT price/bid amoun
 
 ### "Cannot buy your own NFT" / "Seller cannot bid"
 
-The buyer/bidder account must be different from the seller. Make sure `BUYER_PRIVATE_KEY` is a different wallet from `SELLER_PRIVATE_KEY`.
+The buyer/bidder account must be different from the seller. Make sure `BIDDER1_PRIVATE_KEY` is a different wallet from `SELLER_PRIVATE_KEY`.
 
 ### "Auction has not expired yet"
 
-You can only finalize an auction after the duration has passed. Wait for the timer to expire.
+You can only finalize an auction (with bids) after the duration has passed. Wait for the timer to expire. If no bids exist, the seller can cancel anytime.
 
-### "Cannot cancel auction with bids"
+### "Only seller can finalize"
 
-Once bids have been placed, the auction cannot be cancelled. It must be finalized after expiry.
+Only the auction seller can call `finalizeAuction()`. Make sure you are using the seller account (signers[1]).
 
 ### "No funds to withdraw"
 
-If you were outbid, call `withdraw-bid.ts` to reclaim your funds. If the amount is 0, your funds were already withdrawn.
+The safety `withdraw()` is only needed if auto-refund failed during finalization. If auto-refund succeeded, pending returns are already zeroed out.
 
 ## License
 
