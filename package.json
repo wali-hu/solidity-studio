@@ -17,6 +17,8 @@
     "@openzeppelin/contracts": "^5.4.0",
     "@types/chai": "^5.2.3",
     "@types/chai-as-promised": "^8.0.2",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
     "@types/mocha": "^10.0.10",
     "@types/node": "^25.2.3",
     "chai": "^6.2.2",
@@ -28,5 +30,14 @@
     "mocha": "^11.7.5",
     "solidity-coverage": "^0.8.17",
     "typescript": "^5.9.3"
+  },
+  "scripts": {
+    "api": "tsx api/server.ts",
+    "api:watch": "tsx watch api/server.ts"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "tsx": "^4.21.0"
   }
 }

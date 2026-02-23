@@ -1,0 +1,489 @@
+{
+  "info": {
+    "_postman_id": "nft-marketplace-api",
+    "name": "NFT Marketplace API",
+    "description": "API endpoints for NFTCollection and NFTAuction smart contracts on Sepolia testnet.\n\nStart the server: `npm run api`\n\nSigner roles for write operations: owner, seller, bidder1, bidder2, bidder3, bidder4",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "nftContractAddress",
+      "value": "0x2e2c56f458fBdd3EB3099B1Ef1ec0B7bE832C7e7",
+      "type": "string"
+    },
+    {
+      "key": "auctionContractAddress",
+      "value": "0xDF46504998e801A53Db5951B889734DEc5907a25",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/",
+          "host": ["{{baseUrl}}"],
+          "path": [""]
+        },
+        "description": "Returns API info, all available endpoints, contract addresses, and signer roles."
+      }
+    },
+    {
+      "name": "NFTCollection",
+      "item": [
+        {
+          "name": "Read",
+          "item": [
+            {
+              "name": "Get Total Minted",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/nft/total-minted",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "nft", "total-minted"]
+                },
+                "description": "Returns the total number of NFTs minted so far."
+              }
+            },
+            {
+              "name": "Get Collection Name",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/nft/name",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "nft", "name"]
+                },
+                "description": "Returns the ERC721 collection name."
+              }
+            },
+            {
+              "name": "Get Collection Symbol",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/nft/symbol",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "nft", "symbol"]
+                },
+                "description": "Returns the ERC721 collection symbol."
+              }
+            },
+            {
+              "name": "Get Creator of Token",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/nft/creator/0",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "nft", "creator", "0"]
+                },
+                "description": "Returns the original minter (creator) of a token. Change the token ID in the URL."
+              }
+            },
+            {
+              "name": "Get Token URI",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/nft/token-uri/0",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "nft", "token-uri", "0"]
+                },
+                "description": "Returns the metadata URI (IPFS link) for a token. Change the token ID in the URL."
+              }
+            },
+            {
+              "name": "Get Owner of Token",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/nft/owner-of/0",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "nft", "owner-of", "0"]
+                },
+                "description": "Returns the current owner of a token. Change the token ID in the URL."
+              }
+            },
+            {
+              "name": "Get Balance of Address",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/nft/balance-of/0x79E7165D44D2C1ff314F7D484d516656351605Df",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "nft", "balance-of", "0x79E7165D44D2C1ff314F7D484d516656351605Df"]
+                },
+                "description": "Returns how many NFTs an address owns. Replace the address in the URL."
+              }
+            },
+            {
+              "name": "Get Approved Address for Token",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/nft/approved/0",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "nft", "approved", "0"]
+                },
+                "description": "Returns the address approved to transfer a specific token. Change the token ID in the URL."
+              }
+            },
+            {
+              "name": "Check Approval For All",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/nft/is-approved-for-all/0x79E7165D44D2C1ff314F7D484d516656351605Df/{{auctionContractAddress}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "nft", "is-approved-for-all", "0x79E7165D44D2C1ff314F7D484d516656351605Df", "{{auctionContractAddress}}"]
+                },
+                "description": "Checks if an operator is approved to manage all NFTs of an owner. Replace owner and operator addresses in the URL."
+              }
+            }
+          ]
+        },
+        {
+          "name": "Write",
+          "item": [
+            {
+              "name": "Mint NFT",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"to\": \"0x79E7165D44D2C1ff314F7D484d516656351605Df\",\n  \"tokenURI\": \"ipfs://QmExample/metadata.json\",\n  \"signer\": \"seller\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/nft/mint",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "nft", "mint"]
+                },
+                "description": "Mints a new NFT to the specified address.\n\nFields:\n- to: recipient address\n- tokenURI: IPFS metadata URI\n- signer: owner | seller | bidder1 | bidder2 | bidder3 | bidder4"
+              }
+            },
+            {
+              "name": "Approve Token",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"to\": \"{{auctionContractAddress}}\",\n  \"tokenId\": 0,\n  \"signer\": \"seller\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/nft/approve",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "nft", "approve"]
+                },
+                "description": "Approves an address (e.g. the Auction contract) to transfer a specific token.\n\nFields:\n- to: address to approve (usually auction or marketplace contract)\n- tokenId: token ID to approve\n- signer: must be the token owner"
+              }
+            },
+            {
+              "name": "Set Approval For All",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"operator\": \"{{auctionContractAddress}}\",\n  \"approved\": true,\n  \"signer\": \"seller\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/nft/set-approval-for-all",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "nft", "set-approval-for-all"]
+                },
+                "description": "Grants or revokes an operator permission to manage ALL of the signer's tokens.\n\nFields:\n- operator: address to grant/revoke (e.g. auction contract)\n- approved: true to grant, false to revoke\n- signer: token owner"
+              }
+            },
+            {
+              "name": "Transfer NFT",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"from\": \"0x79E7165D44D2C1ff314F7D484d516656351605Df\",\n  \"to\": \"0x0000000000000000000000000000000000000001\",\n  \"tokenId\": 0,\n  \"signer\": \"seller\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/nft/transfer",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "nft", "transfer"]
+                },
+                "description": "Transfers an NFT between addresses.\n\nFields:\n- from: current owner address\n- to: recipient address\n- tokenId: token to transfer\n- signer: must be owner or approved"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "NFTAuction",
+      "item": [
+        {
+          "name": "Read",
+          "item": [
+            {
+              "name": "Get Total Auctions",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/auction/total-auctions",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "auction", "total-auctions"]
+                },
+                "description": "Returns the total number of auctions ever created."
+              }
+            },
+            {
+              "name": "Get Platform Fee",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/auction/platform-fee",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "auction", "platform-fee"]
+                },
+                "description": "Returns the current platform fee percentage (e.g. 250 = 2.5%)."
+              }
+            },
+            {
+              "name": "Get Active Auctions",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/auction/active",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "auction", "active"]
+                },
+                "description": "Returns all currently active (not expired, not finalized) auctions."
+              }
+            },
+            {
+              "name": "Get Auctions By Seller",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/auction/by-seller/0x79E7165D44D2C1ff314F7D484d516656351605Df",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "auction", "by-seller", "0x79E7165D44D2C1ff314F7D484d516656351605Df"]
+                },
+                "description": "Returns all auctions created by a specific seller. Replace the address in the URL."
+              }
+            },
+            {
+              "name": "Get Auctions Won By Address",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/auction/won-by/0x7628fa6C917E9da45a4948410cB54869190248Fb",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "auction", "won-by", "0x7628fa6C917E9da45a4948410cB54869190248Fb"]
+                },
+                "description": "Returns all auctions won by a specific address. Replace the address in the URL."
+              }
+            },
+            {
+              "name": "Get Pending Returns",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/auction/pending-returns/0x7628fa6C917E9da45a4948410cB54869190248Fb",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "auction", "pending-returns", "0x7628fa6C917E9da45a4948410cB54869190248Fb"]
+                },
+                "description": "Returns the amount of ETH pending to be withdrawn by an address (from outbid refunds). Replace the address in the URL."
+              }
+            },
+            {
+              "name": "Get Auction By ID",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/auction/0",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "auction", "0"]
+                },
+                "description": "Returns full details of a specific auction. Change the auction ID in the URL."
+              }
+            },
+            {
+              "name": "Get Auction Bidders",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/auction/0/bidders",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "auction", "0", "bidders"]
+                },
+                "description": "Returns the list of all bidder addresses for an auction. Change the auction ID in the URL."
+              }
+            }
+          ]
+        },
+        {
+          "name": "Write",
+          "item": [
+            {
+              "name": "Create Auction",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nftContract\": \"{{nftContractAddress}}\",\n  \"tokenId\": 0,\n  \"minPrice\": \"0.001\",\n  \"duration\": 300,\n  \"signer\": \"seller\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/auction/create",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "auction", "create"]
+                },
+                "description": "Creates a new auction for an NFT. The signer must own the token and have approved the auction contract.\n\nFields:\n- nftContract: NFTCollection contract address\n- tokenId: token to auction\n- minPrice: minimum bid in ETH (e.g. \"0.001\")\n- duration: auction duration in seconds (e.g. 300 = 5 minutes)\n- signer: must be the token owner"
+              }
+            },
+            {
+              "name": "Place Bid",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"auctionId\": 0,\n  \"bidAmount\": \"0.002\",\n  \"signer\": \"bidder1\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/auction/bid",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "auction", "bid"]
+                },
+                "description": "Places a bid on an active auction. Bid must be >= minPrice and > current highest bid.\n\nFields:\n- auctionId: ID of the auction\n- bidAmount: bid amount in ETH (e.g. \"0.002\")\n- signer: bidder wallet (bidder1, bidder2, etc.)"
+              }
+            },
+            {
+              "name": "Finalize Auction",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"auctionId\": 0,\n  \"signer\": \"seller\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/auction/finalize",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "auction", "finalize"]
+                },
+                "description": "Finalizes an expired auction. If bids exist, NFT goes to highest bidder and seller gets paid (minus platform fee). If no bids, NFT is returned to seller.\n\nFields:\n- auctionId: ID of the auction to finalize\n- signer: anyone can call this after expiry"
+              }
+            },
+            {
+              "name": "Withdraw Pending Returns",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"signer\": \"bidder1\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/auction/withdraw",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "auction", "withdraw"]
+                },
+                "description": "Withdraws any pending ETH returns (from being outbid). Safety fallback for failed auto-refunds.\n\nFields:\n- signer: the wallet that has pending returns"
+              }
+            },
+            {
+              "name": "Set Platform Fee (Owner Only)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"newFeePercentage\": 250,\n  \"signer\": \"owner\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/auction/set-platform-fee",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "auction", "set-platform-fee"]
+                },
+                "description": "Updates the platform fee percentage. Only the contract owner can call this.\n\n250 = 2.5%, 500 = 5%, max 1000 = 10%\n\nFields:\n- newFeePercentage: new fee (e.g. 250 for 2.5%)\n- signer: must be \"owner\""
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
