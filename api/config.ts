@@ -36,24 +36,22 @@ if (!RPC_URL) throw new Error("SEPOLIA_RPC_URL not set in .env");
 
 export const provider = new ethers.JsonRpcProvider(RPC_URL);
 
-// Wallets mapped by role name
-const walletKeys: Record<string, string | undefined> = {
-  owner: process.env.SEPOLIA_PRIVATE_KEY,
-  seller: process.env.SELLER_PRIVATE_KEY,
-  bidder1: process.env.BIDDER1_PRIVATE_KEY,
-  bidder2: process.env.BIDDER2_PRIVATE_KEY,
-  bidder3: process.env.BIDDER3_PRIVATE_KEY,
-  bidder4: process.env.BIDDER4_PRIVATE_KEY,
-};
-
-export function getSigner(role: string): ethers.Wallet {
-  const key = walletKeys[role.toLowerCase()];
-  if (!key) {
-    throw new Error(
-      `Unknown signer role "${role}". Valid roles: ${Object.keys(walletKeys).join(", ")}`
-    );
+// Create a signer from a raw private key provided by the client
+export function getSignerFromPrivateKey(privateKey: string): ethers.Wallet {
+  if (!privateKey || typeof privateKey !== "string") {
+    throw new Error("Private key is required");
   }
-  return new ethers.Wallet(key, provider);
+
+  // Accept keys with or without 0x prefix
+  const normalizedKey = privateKey.startsWith("0x")
+    ? privateKey
+    : `0x${privateKey}`;
+
+  try {
+    return new ethers.Wallet(normalizedKey, provider);
+  } catch (err: any) {
+    throw new Error(`Invalid private key: ${err.message ?? String(err)}`);
+  }
 }
 
 // Contract addresses

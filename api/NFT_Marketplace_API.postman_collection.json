@@ -1,8 +1,8 @@
 {
   "info": {
-    "_postman_id": "nft-marketplace-api",
-    "name": "NFT Marketplace API",
-    "description": "API endpoints for NFTCollection and NFTAuction smart contracts on Sepolia testnet.\n\nStart the server: `npm run api`\n\nSigner roles for write operations: owner, seller, bidder1, bidder2, bidder3, bidder4",
+    "_postman_id": "nft-marketplace-api-v2",
+    "name": "NFT Marketplace API v2",
+    "description": "API endpoints for NFTCollection and NFTAuction smart contracts on Sepolia testnet.\n\nStart the server: `npm run api`\n\n⚠️ IMPORTANT: All write operations now require a `privateKey` in the request body instead of a `signer` role. Private keys are provided by the user via Postman, not from .env file.\n\nPrivate key format: Can be with or without 0x prefix (e.g. \"0xabc123...\" or \"abc123...\")",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -20,6 +20,12 @@
       "key": "auctionContractAddress",
       "value": "0xDF46504998e801A53Db5951B889734DEc5907a25",
       "type": "string"
+    },
+    {
+      "key": "privateKey",
+      "value": "your_private_key_here",
+      "type": "string",
+      "description": "Your private key (with or without 0x prefix). Update this variable for each request or provide it directly in the body."
     }
   ],
   "item": [
@@ -33,7 +39,7 @@
           "host": ["{{baseUrl}}"],
           "path": [""]
         },
-        "description": "Returns API info, all available endpoints, contract addresses, and signer roles."
+        "description": "Returns API info, all available endpoints, contract addresses, and network information."
       }
     },
     {
@@ -176,14 +182,14 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"to\": \"0x79E7165D44D2C1ff314F7D484d516656351605Df\",\n  \"tokenURI\": \"ipfs://QmExample/metadata.json\",\n  \"signer\": \"seller\"\n}"
+                  "raw": "{\n  \"to\": \"0x79E7165D44D2C1ff314F7D484d516656351605Df\",\n  \"tokenURI\": \"ipfs://QmExample/metadata.json\",\n  \"privateKey\": \"{{privateKey}}\"\n}"
                 },
                 "url": {
                   "raw": "{{baseUrl}}/api/nft/mint",
                   "host": ["{{baseUrl}}"],
                   "path": ["api", "nft", "mint"]
                 },
-                "description": "Mints a new NFT to the specified address.\n\nFields:\n- to: recipient address\n- tokenURI: IPFS metadata URI\n- signer: owner | seller | bidder1 | bidder2 | bidder3 | bidder4"
+                "description": "Mints a new NFT to the specified address.\n\nFields:\n- to: recipient address (can be your own address)\n- tokenURI: IPFS metadata URI\n- privateKey: your private key (with or without 0x prefix)\n\n⚠️ Anyone can mint - no restrictions."
               }
             },
             {
@@ -198,14 +204,14 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"to\": \"{{auctionContractAddress}}\",\n  \"tokenId\": 0,\n  \"signer\": \"seller\"\n}"
+                  "raw": "{\n  \"to\": \"{{auctionContractAddress}}\",\n  \"tokenId\": 0,\n  \"privateKey\": \"{{privateKey}}\"\n}"
                 },
                 "url": {
                   "raw": "{{baseUrl}}/api/nft/approve",
                   "host": ["{{baseUrl}}"],
                   "path": ["api", "nft", "approve"]
                 },
-                "description": "Approves an address (e.g. the Auction contract) to transfer a specific token.\n\nFields:\n- to: address to approve (usually auction or marketplace contract)\n- tokenId: token ID to approve\n- signer: must be the token owner"
+                "description": "Approves an address (e.g. the Auction contract) to transfer a specific token.\n\nFields:\n- to: address to approve (usually auction or marketplace contract)\n- tokenId: token ID to approve\n- privateKey: must be the token owner's private key"
               }
             },
             {
@@ -220,14 +226,14 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"operator\": \"{{auctionContractAddress}}\",\n  \"approved\": true,\n  \"signer\": \"seller\"\n}"
+                  "raw": "{\n  \"operator\": \"{{auctionContractAddress}}\",\n  \"approved\": true,\n  \"privateKey\": \"{{privateKey}}\"\n}"
                 },
                 "url": {
                   "raw": "{{baseUrl}}/api/nft/set-approval-for-all",
                   "host": ["{{baseUrl}}"],
                   "path": ["api", "nft", "set-approval-for-all"]
                 },
-                "description": "Grants or revokes an operator permission to manage ALL of the signer's tokens.\n\nFields:\n- operator: address to grant/revoke (e.g. auction contract)\n- approved: true to grant, false to revoke\n- signer: token owner"
+                "description": "Grants or revokes an operator permission to manage ALL of your tokens.\n\nFields:\n- operator: address to grant/revoke (e.g. auction contract)\n- approved: true to grant, false to revoke\n- privateKey: token owner's private key"
               }
             },
             {
@@ -242,14 +248,14 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"from\": \"0x79E7165D44D2C1ff314F7D484d516656351605Df\",\n  \"to\": \"0x0000000000000000000000000000000000000001\",\n  \"tokenId\": 0,\n  \"signer\": \"seller\"\n}"
+                  "raw": "{\n  \"from\": \"0x79E7165D44D2C1ff314F7D484d516656351605Df\",\n  \"to\": \"0x0000000000000000000000000000000000000001\",\n  \"tokenId\": 0,\n  \"privateKey\": \"{{privateKey}}\"\n}"
                 },
                 "url": {
                   "raw": "{{baseUrl}}/api/nft/transfer",
                   "host": ["{{baseUrl}}"],
                   "path": ["api", "nft", "transfer"]
                 },
-                "description": "Transfers an NFT between addresses.\n\nFields:\n- from: current owner address\n- to: recipient address\n- tokenId: token to transfer\n- signer: must be owner or approved"
+                "description": "Transfers an NFT between addresses.\n\nFields:\n- from: current owner address\n- to: recipient address\n- tokenId: token to transfer\n- privateKey: must be owner's or approved address's private key"
               }
             }
           ]
@@ -341,6 +347,19 @@
               }
             },
             {
+              "name": "Get Contract Balance",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/auction/contract-balance",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "auction", "contract-balance"]
+                },
+                "description": "Returns the native ETH balance of the NFTAuction contract. Use this before and after actions (bids/finalize) to see balance changes."
+              }
+            },
+            {
               "name": "Get Auction By ID",
               "request": {
                 "method": "GET",
@@ -383,14 +402,14 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"nftContract\": \"{{nftContractAddress}}\",\n  \"tokenId\": 0,\n  \"minPrice\": \"0.001\",\n  \"duration\": 300,\n  \"signer\": \"seller\"\n}"
+                  "raw": "{\n  \"nftContract\": \"{{nftContractAddress}}\",\n  \"tokenId\": 0,\n  \"minPrice\": \"0.001\",\n  \"duration\": 300,\n  \"privateKey\": \"{{privateKey}}\"\n}"
                 },
                 "url": {
                   "raw": "{{baseUrl}}/api/auction/create",
                   "host": ["{{baseUrl}}"],
                   "path": ["api", "auction", "create"]
                 },
-                "description": "Creates a new auction for an NFT. The signer must own the token and have approved the auction contract.\n\nFields:\n- nftContract: NFTCollection contract address\n- tokenId: token to auction\n- minPrice: minimum bid in ETH (e.g. \"0.001\")\n- duration: auction duration in seconds (e.g. 300 = 5 minutes)\n- signer: must be the token owner"
+                "description": "Creates a new auction for an NFT. The signer must own the token and have approved the auction contract.\n\n⚠️ No listing fee required - creating an auction is free!\n\nFields:\n- nftContract: NFTCollection contract address\n- tokenId: token to auction\n- minPrice: minimum bid in ETH (e.g. \"0.001\")\n- duration: auction duration in seconds (e.g. 300 = 5 minutes)\n- privateKey: token owner's private key"
               }
             },
             {
@@ -405,14 +424,14 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"auctionId\": 0,\n  \"bidAmount\": \"0.002\",\n  \"signer\": \"bidder1\"\n}"
+                  "raw": "{\n  \"auctionId\": 0,\n  \"bidAmount\": \"0.002\",\n  \"privateKey\": \"{{privateKey}}\"\n}"
                 },
                 "url": {
                   "raw": "{{baseUrl}}/api/auction/bid",
                   "host": ["{{baseUrl}}"],
                   "path": ["api", "auction", "bid"]
                 },
-                "description": "Places a bid on an active auction. Bid must be >= minPrice and > current highest bid.\n\nFields:\n- auctionId: ID of the auction\n- bidAmount: bid amount in ETH (e.g. \"0.002\")\n- signer: bidder wallet (bidder1, bidder2, etc.)"
+                "description": "Places a bid on an active auction. Bid must be >= minPrice and > current highest bid.\n\nFields:\n- auctionId: ID of the auction\n- bidAmount: bid amount in ETH (e.g. \"0.002\")\n- privateKey: bidder's private key (anyone can bid)"
               }
             },
             {
@@ -427,36 +446,14 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"auctionId\": 0,\n  \"signer\": \"seller\"\n}"
+                  "raw": "{\n  \"auctionId\": 0,\n  \"privateKey\": \"{{privateKey}}\"\n}"
                 },
                 "url": {
                   "raw": "{{baseUrl}}/api/auction/finalize",
                   "host": ["{{baseUrl}}"],
                   "path": ["api", "auction", "finalize"]
                 },
-                "description": "Finalizes an expired auction. If bids exist, NFT goes to highest bidder and seller gets paid (minus platform fee). If no bids, NFT is returned to seller.\n\nFields:\n- auctionId: ID of the auction to finalize\n- signer: anyone can call this after expiry"
-              }
-            },
-            {
-              "name": "Withdraw Pending Returns",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"signer\": \"bidder1\"\n}"
-                },
-                "url": {
-                  "raw": "{{baseUrl}}/api/auction/withdraw",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "auction", "withdraw"]
-                },
-                "description": "Withdraws any pending ETH returns (from being outbid). Safety fallback for failed auto-refunds.\n\nFields:\n- signer: the wallet that has pending returns"
+                "description": "Finalizes an expired auction. On-chain logic handles:\n- Winner selection (highest bidder)\n- NFT transfer to winner\n- Seller receives winning bid minus 2.5% platform fee\n- Platform fee sent to contract owner\n- All outbid bidders automatically refunded\n\nIf no bids exist, NFT is returned to seller.\n\nFields:\n- auctionId: ID of the auction to finalize\n- privateKey: anyone can call this after expiry (typically seller)"
               }
             },
             {
@@ -471,14 +468,14 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"newFeePercentage\": 250,\n  \"signer\": \"owner\"\n}"
+                  "raw": "{\n  \"newFeePercentage\": 250,\n  \"privateKey\": \"{{privateKey}}\"\n}"
                 },
                 "url": {
                   "raw": "{{baseUrl}}/api/auction/set-platform-fee",
                   "host": ["{{baseUrl}}"],
                   "path": ["api", "auction", "set-platform-fee"]
                 },
-                "description": "Updates the platform fee percentage. Only the contract owner can call this.\n\n250 = 2.5%, 500 = 5%, max 1000 = 10%\n\nFields:\n- newFeePercentage: new fee (e.g. 250 for 2.5%)\n- signer: must be \"owner\""
+                "description": "Updates the platform fee percentage. Only the contract owner can call this.\n\n250 = 2.5%, 500 = 5%, max 1000 = 10%\n\nFields:\n- newFeePercentage: new fee (e.g. 250 for 2.5%)\n- privateKey: contract owner's private key"
               }
             }
           ]
