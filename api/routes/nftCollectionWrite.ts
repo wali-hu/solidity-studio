@@ -26,25 +26,9 @@ router.post("/mint", async (req: Request, res: Response) => {
     const contract = getNFTCollectionContract(wallet);
 
     const tx = await contract.mint(to, tokenURI);
-    const receipt = await tx.wait();
-
-    // Parse the NFTMinted event from receipt
-    const mintEvent = receipt.logs
-      .map((log: any) => {
-        try {
-          return contract.interface.parseLog(log);
-        } catch {
-          return null;
-        }
-      })
-      .find((e: any) => e?.name === "NFTMinted");
-
     res.json({
-      message: "NFT minted successfully",
-      transactionHash: receipt.hash,
-      tokenId: mintEvent?.args?.tokenId?.toString() ?? null,
-      to: mintEvent?.args?.to ?? to,
-      tokenURI: mintEvent?.args?.tokenURI ?? tokenURI,
+      message: "Mint transaction submitted",
+      transactionHash: tx.hash,
     });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -70,11 +54,9 @@ router.post("/approve", async (req: Request, res: Response) => {
     const contract = getNFTCollectionContract(wallet);
 
     const tx = await contract.approve(to, tokenId);
-    const receipt = await tx.wait();
-
     res.json({
       message: `Token ${tokenId} approved for ${to}`,
-      transactionHash: receipt.hash,
+      transactionHash: tx.hash,
     });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -100,11 +82,9 @@ router.post("/set-approval-for-all", async (req: Request, res: Response) => {
     const contract = getNFTCollectionContract(wallet);
 
     const tx = await contract.setApprovalForAll(operator, approved);
-    const receipt = await tx.wait();
-
     res.json({
       message: `Approval for all ${approved ? "granted to" : "revoked from"} ${operator}`,
-      transactionHash: receipt.hash,
+      transactionHash: tx.hash,
     });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -130,11 +110,9 @@ router.post("/transfer", async (req: Request, res: Response) => {
     const contract = getNFTCollectionContract(wallet);
 
     const tx = await contract.transferFrom(from, to, tokenId);
-    const receipt = await tx.wait();
-
     res.json({
       message: `Token ${tokenId} transferred from ${from} to ${to}`,
-      transactionHash: receipt.hash,
+      transactionHash: tx.hash,
     });
   } catch (err: any) {
     res.status(500).json({ error: err.message });

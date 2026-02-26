@@ -158,6 +158,7 @@ ETHERSCAN_API_KEY=your_etherscan_api_key
 - **One-shot finalization**: Single `finalizeAuction()` call handles everything
 - **Cancel**: Seller can cancel anytime if no bids have been placed
 - **Safety withdraw**: Fallback `withdraw()` if auto-refund fails during finalization
+- **Winner re-auctions**: Any current NFT owner (including a previous auction winner) can approve the auction contract and create a **new** auction for that NFT
 - **View functions**: Fetch active auctions, auctions by seller, auctions won by user, auction bidders
 
 #### How an Auction Works
@@ -174,6 +175,16 @@ ETHERSCAN_API_KEY=your_etherscan_api_key
    - All outbid bidders are automatically refunded their ETH
 7. If no bids were placed, seller can call `finalizeAuction()` anytime to cancel and get the NFT back
 8. If auto-refund fails for any bidder, they can use the safety `withdraw()` fallback
+9. The **winner**, now owning the NFT, can optionally start a **new auction** for the same NFT (re-auction), either:
+   - Directly by calling `createAuction()` on-chain (after approving the auction contract for that specific token), or
+   - Via the API endpoint `POST /api/auction/relist-from-auction` using their private key — this endpoint automatically:
+     - Verifies the caller is the winner of the previous auction
+     - Submits an `approve()` transaction for the specific token (if not already approved)
+     - Immediately submits a `createAuction()` transaction
+     - Returns both transaction hashes instantly (fast response, no waiting for confirmations)
+     - Note: If approval was needed, wait for it to confirm before the auction creation transaction is processed
+
+
 
 ## All Commands
 

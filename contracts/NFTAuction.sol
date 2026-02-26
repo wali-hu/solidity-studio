@@ -72,7 +72,13 @@ contract NFTAuction is ReentrancyGuard, Ownable {
 
     /**
      * @dev Creates a new auction. NFT is transferred to contract as escrow.
-     *      No listing fee required.
+     *
+     *      - No listing fee required.
+     *      - Caller must be the current owner of the NFT (this can be the
+     *        original seller OR a previous auction winner who now owns it).
+     *      - Any current owner can re-list their NFT in a new auction by
+     *        calling this function again after approving the auction contract.
+     *
      * @param nftContract Address of the NFT contract
      * @param tokenId Token ID to auction
      * @param minPrice Minimum starting price (reserve price)

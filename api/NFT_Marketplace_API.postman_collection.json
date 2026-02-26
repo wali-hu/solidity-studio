@@ -457,6 +457,28 @@
               }
             },
             {
+              "name": "Relist NFT From Previous Auction (Winner Only, Optional)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"previousAuctionId\": 0,\n  \"minPrice\": \"0.0015\",\n  \"duration\": 300,\n  \"privateKey\": \"{{privateKey}}\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/auction/relist-from-auction",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "auction", "relist-from-auction"]
+                },
+                "description": "Optional convenience endpoint: lets the *winner* of a previous auction start a new auction for the **same NFT**.\n\nRequirements:\n- The previous auction must be finalized with a winner (highestBidder != 0).\n- The caller's private key must belong to the previous auction winner.\n\nWhat this endpoint does automatically:\n1. Verifies you are the winner of the previous auction.\n2. Checks if the NFTAuction contract is approved for this specific token.\n3. If not approved, automatically submits an `approve()` transaction for the token (returns hash immediately, no waiting).\n4. Immediately submits a `createAuction()` transaction for the same NFT.\n5. Returns both transaction hashes instantly (fast response ~2-3 seconds).\n\n⚠️ Important: If approval was needed, the `auctionTransactionHash` may revert if the approval transaction hasn't confirmed yet. In that case, wait for the approval to confirm, then retry this endpoint (it will skip approval if already approved).\n\nFields:\n- previousAuctionId: ID of the auction that was won.\n- minPrice: new minimum bid in ETH for the re-auction (e.g. \"0.0015\").\n- duration: new auction duration in seconds.\n- privateKey: private key of the previous winner (current NFT owner)."
+              }
+            },
+            {
               "name": "Set Platform Fee (Owner Only)",
               "request": {
                 "method": "POST",
