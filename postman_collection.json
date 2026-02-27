@@ -42,7 +42,12 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"token_address\": \"{{TOKEN_ADDRESS}}\",\n  \"token_amount\": \"0.001\",\n  \"min_eth_out\": \"0\"\n}"
+          "raw": "{\n  \"token_address\": \"{{TOKEN_ADDRESS}}\",\n  \"min_eth_out\": \"0\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
         },
         "url": {
           "raw": "http://localhost:3000/api/v1/swap/sell",
@@ -50,6 +55,21 @@
           "host": ["localhost"],
           "port": "3000",
           "path": ["api", "v1", "swap", "sell"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get Token Balance",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/api/v1/balance/{{TOKEN_ADDRESS}}",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "v1", "balance", "{{TOKEN_ADDRESS}}"]
         }
       },
       "response": []

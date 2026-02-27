@@ -89,17 +89,13 @@ app.post("/api/v1/swap/buy", async (req, res) => {
 });
 
 // Sell tokens: Token -> ETH
+// Automatically fetches wallet balance and sells all tokens
 app.post("/api/v1/swap/sell", async (req, res) => {
   try {
-    const { token_address, token_amount, min_eth_out } = req.body ?? {};
+    const { token_address, min_eth_out } = req.body ?? {};
 
     if (!token_address || typeof token_address !== "string") {
       return res.status(400).json({ error: "token_address is required" });
-    }
-    if (!token_amount || typeof token_amount !== "string") {
-      return res
-        .status(400)
-        .json({ error: "token_amount (string) is required" });
     }
 
     const rpcUrl = process.env.SEPOLIA_RPC_URL;
@@ -120,13 +116,32 @@ app.post("/api/v1/swap/sell", async (req, res) => {
       token_address,
       [
         "function decimals() view returns (uint8)",
+        "function balanceOf(address) view returns (uint256)",
         "function approve(address,uint256) returns (bool)",
+        "function symbol() view returns (string)",
       ],
       wallet,
     );
 
-    const decimals = await erc20.decimals();
-    const amountIn = parseUnits(token_amount, decimals);
+    // Fetch wallet's token balance
+    const [balance, decimals, symbol] = await Promise.all([
+      erc20.balanceOf(wallet.address),
+      erc20.decimals(),
+      erc20.symbol(),
+    ]);
+
+    // Check if wallet has any tokens
+    if (balance === 0n) {
+      return res.status(400).json({
+        error: "Insufficient balance",
+        details: "Wallet has zero token balance",
+        tokenAddress: token_address,
+        symbol: symbol || "Unknown",
+      });
+    }
+
+    // Use the full balance as amountIn
+    const amountIn = balance;
 
     const approveTx = await erc20.approve(swapperAddress, amountIn);
     await approveTx.wait();
@@ -145,8 +160,15 @@ app.post("/api/v1/swap/sell", async (req, res) => {
       amountIn,
       minEthOut,
     );
+
+    const balanceFormatted = Number(balance) / 10 ** Number(decimals);
+
     return res.json({
       txHash: tx.hash,
+      tokenAddress: token_address,
+      symbol: symbol || "Unknown",
+      amountSold: balance.toString(),
+      amountSoldFormatted: balanceFormatted.toString(),
     });
   } catch (err) {
     console.error("Swap failed:", err);
@@ -154,6 +176,58 @@ app.post("/api/v1/swap/sell", async (req, res) => {
       error: "Swap failed",
       details:
         err instanceof Error ? err.message : "Unknown error during swap",
+    });
+  }
+});
+
+// Get token balance for the configured wallet
+app.get("/api/v1/balance/:tokenAddress", async (req, res) => {
+  try {
+    const { tokenAddress } = req.params;
+
+    const rpcUrl = process.env.SEPOLIA_RPC_URL;
+    const privateKey = process.env.SEPOLIA_PRIVATE_KEY;
+
+    if (!rpcUrl || !privateKey) {
+      return res.status(500).json({
+        error: "SEPOLIA_RPC_URL and SEPOLIA_PRIVATE_KEY must be set",
+      });
+    }
+
+    const provider = new JsonRpcProvider(rpcUrl);
+    const wallet = new Wallet(privateKey, provider);
+
+    const erc20 = new Contract(
+      tokenAddress,
+      [
+        "function balanceOf(address) view returns (uint256)",
+        "function decimals() view returns (uint8)",
+        "function symbol() view returns (string)",
+      ],
+      wallet,
+    );
+
+    const [balance, decimals, symbol] = await Promise.all([
+      erc20.balanceOf(wallet.address),
+      erc20.decimals(),
+      erc20.symbol(),
+    ]);
+
+    const humanReadableBalance = Number(balance) / 10 ** Number(decimals);
+
+    return res.json({
+      wallet: wallet.address,
+      tokenAddress,
+      symbol,
+      balance: balance.toString(),
+      balanceFormatted: humanReadableBalance.toString(),
+      decimals: Number(decimals),
+    });
+  } catch (err) {
+    console.error("Balance check failed:", err);
+    return res.status(500).json({
+      error: "Balance check failed",
+      details: err instanceof Error ? err.message : "Unknown error",
     });
   }
 });
