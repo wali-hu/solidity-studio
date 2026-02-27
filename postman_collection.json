@@ -1,0 +1,41 @@
+{
+  "info": {
+    "name": "Uniswap V2 Swap API - Sepolia",
+    "_postman_id": "00000000-0000-0000-0000-000000000000",
+    "description": "Postman collection for testing the ETH->Token swap API on Sepolia.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Swap ETH for Token",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"token_address\": \"{{TOKEN_ADDRESS}}\",\n  \"eth_amount\": \"0.001\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/v1/swap",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "v1", "swap"]
+        }
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "TOKEN_ADDRESS",
+      "value": "0x7a0A8c1FA9788cec58AeaA0B1859B537A0969834"
+    }
+  ]
+}
+
