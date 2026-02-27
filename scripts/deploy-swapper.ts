@@ -3,15 +3,9 @@ import { network } from "hardhat";
 const { ethers } = await network.connect();
 
 /**
- * Deploy EthToTokenUniswapV2Swapper to Sepolia and optionally verify on Etherscan.
- *
- * Expected environment variables:
- * - SEPOLIA_RPC_URL        : JSON-RPC URL (already used by hardhat.config.ts)
- * - SEPOLIA_PRIVATE_KEY    : Deployer private key (already used by hardhat.config.ts)
- * - ETHERSCAN_API_KEY      : Etherscan API key for verification (optional)
- *
- * Example:
- *   ETHERSCAN_API_KEY=xxx npx hardhat run scripts/deploy-swapper.ts --network sepolia
+ * Deploy EthToTokenUniswapV2Swapper to Sepolia and optionally verifies on Etherscan.
+ * 
+ * npx hardhat run scripts/deploy-swapper.ts --network sepolia
  */
 async function main() {
   console.log("Deploying EthToTokenUniswapV2Swapper...");
@@ -33,26 +27,12 @@ async function main() {
   const deployedAddress = await swapper.getAddress();
   console.log("EthToTokenUniswapV2Swapper deployed to:", deployedAddress);
 
-  // Optional: verify on Etherscan if API key is provided and we're on Sepolia.
   const chainId = (await ethers.provider.getNetwork()).chainId;
-  const etherscanKey = process.env.ETHERSCAN_API_KEY;
 
-  if (chainId === 11155111n && etherscanKey) {
-    console.log("Waiting for a few confirmations before verification...");
-    const tx = swapper.deploymentTransaction();
-    if (tx) {
-      await ethers.provider.waitForTransaction(tx.hash, 5);
-    }
-
-    console.log("Verifying contract on Etherscan...");
-    // Hardhat 3 uses the built-in verify task if @nomicfoundation/hardhat-verify is installed.
-    await network.run("verify:verify", {
-      address: deployedAddress,
-      constructorArguments: [routerAddress, wethAddress],
-    });
-  } else {
+  if (chainId === 11155111n) {
     console.log(
-      "Skipping Etherscan verification (non-Sepolia network or no ETHERSCAN_API_KEY).",
+      "To verify on Etherscan, run the following command separately:\n" +
+        `npx hardhat verify --network sepolia ${deployedAddress} ${routerAddress} ${wethAddress}`,
     );
   }
 }

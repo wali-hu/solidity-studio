@@ -7,7 +7,7 @@ describe("EthToTokenUniswapV2Swapper", function () {
   const ROUTER_ADDRESS = "0xeE567Fe1712Faf6149d80dA1E6934E354124CfE3";
   const WETH_ADDRESS = "0xfff9976782d46cc05630d1f6ebab18b2324d6b14";
 
-  // We will use a dummy token address in local tests; no real swaps occur.
+  // I am using a dummy token address in local tests; no real swaps occur.
   const DUMMY_TOKEN_ADDRESS = "0x000000000000000000000000000000000000dEaD";
 
   it("deploys with the correct router and WETH addresses", async () => {
@@ -16,8 +16,11 @@ describe("EthToTokenUniswapV2Swapper", function () {
     );
     const swapper = await Swapper.deploy(ROUTER_ADDRESS, WETH_ADDRESS);
 
-    expect(await swapper.uniswapRouter()).to.equal(ROUTER_ADDRESS);
-    expect(await swapper.WETH()).to.equal(WETH_ADDRESS);
+    const expectedRouter = ethers.getAddress(ROUTER_ADDRESS);
+    const expectedWeth = ethers.getAddress(WETH_ADDRESS);
+
+    expect(await swapper.uniswapRouter()).to.equal(expectedRouter);
+    expect(await swapper.WETH()).to.equal(expectedWeth);
   });
 
   it("reverts when no ETH is sent", async () => {

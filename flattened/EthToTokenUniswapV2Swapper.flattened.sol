@@ -1,4 +1,11 @@
+// [dotenv@17.3.1] injecting env (7) from .env -- tip: 🛡️ auth for agents: https://vestauth.com
+// Sources flattened with hardhat v3.1.10 https://hardhat.org
+
 // SPDX-License-Identifier: MIT
+
+// File contracts/EthToTokenUniswapV2Swapper.sol
+
+// Original license: SPDX_License_Identifier: MIT
 pragma solidity ^0.8.28;
 
 /// @title ETH to Token Swapper using Uniswap V2 (Sepolia)

@@ -1,5 +1,9 @@
 import hardhatToolboxMochaEthersPlugin from "@nomicfoundation/hardhat-toolbox-mocha-ethers";
 import { configVariable, defineConfig } from "hardhat/config";
+import * as dotenv from "dotenv";
+
+// Load environment variables from .env into process.env
+dotenv.config();
 
 export default defineConfig({
   plugins: [hardhatToolboxMochaEthersPlugin],
