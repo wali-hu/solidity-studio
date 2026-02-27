@@ -9,6 +9,7 @@ describe("EthToTokenUniswapV2Swapper", function () {
 
   // I am using a dummy token address in local tests; no real swaps occur.
   const DUMMY_TOKEN_ADDRESS = "0x000000000000000000000000000000000000dEaD";
+  const DUMMY_TOKEN_HOLDER = "0x0000000000000000000000000000000000000001";
 
   it("deploys with the correct router and WETH addresses", async () => {
     const Swapper = await ethers.getContractFactory(
@@ -62,6 +63,39 @@ describe("EthToTokenUniswapV2Swapper", function () {
         { value: ethers.parseEther("0.1") },
       ),
     ).to.be.revertedWith("Use unwrap for WETH");
+  });
+
+  it("reverts token-to-ETH swap when no tokens are specified", async () => {
+    const Swapper = await ethers.getContractFactory(
+      "EthToTokenUniswapV2Swapper",
+    );
+    const swapper = await Swapper.deploy(ROUTER_ADDRESS, WETH_ADDRESS);
+
+    await expect(
+      swapper.swapTokenForETH(DUMMY_TOKEN_ADDRESS, 0, 0),
+    ).to.be.revertedWith("No tokens sent");
+  });
+
+  it("reverts token-to-ETH swap when token address is zero", async () => {
+    const Swapper = await ethers.getContractFactory(
+      "EthToTokenUniswapV2Swapper",
+    );
+    const swapper = await Swapper.deploy(ROUTER_ADDRESS, WETH_ADDRESS);
+
+    await expect(
+      swapper.swapTokenForETH(ethers.ZeroAddress, 1n, 0),
+    ).to.be.revertedWith("Invalid token address");
+  });
+
+  it("reverts token-to-ETH swap when token address is WETH", async () => {
+    const Swapper = await ethers.getContractFactory(
+      "EthToTokenUniswapV2Swapper",
+    );
+    const swapper = await Swapper.deploy(ROUTER_ADDRESS, WETH_ADDRESS);
+
+    await expect(
+      swapper.swapTokenForETH(WETH_ADDRESS, 1n, 0),
+    ).to.be.revertedWith("Use wrap for WETH");
   });
 });
 

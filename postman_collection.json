@@ -7,7 +7,7 @@
   },
   "item": [
     {
-      "name": "Swap ETH for Token",
+      "name": "Buy Tokens (ETH -> Token)",
       "request": {
         "method": "POST",
         "header": [
@@ -21,11 +21,35 @@
           "raw": "{\n  \"token_address\": \"{{TOKEN_ADDRESS}}\",\n  \"eth_amount\": \"0.001\"\n}"
         },
         "url": {
-          "raw": "http://localhost:3000/api/v1/swap",
+          "raw": "http://localhost:3000/api/v1/swap/buy",
           "protocol": "http",
           "host": ["localhost"],
           "port": "3000",
-          "path": ["api", "v1", "swap"]
+          "path": ["api", "v1", "swap", "buy"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Sell Tokens (Token -> ETH)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"token_address\": \"{{TOKEN_ADDRESS}}\",\n  \"token_amount\": \"0.001\",\n  \"min_eth_out\": \"0\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/v1/swap/sell",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "v1", "swap", "sell"]
         }
       },
       "response": []

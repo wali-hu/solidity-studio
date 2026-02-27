@@ -22,9 +22,23 @@ const SWAPPER_ABI = [
     stateMutability: "payable",
     type: "function",
   },
+  {
+    inputs: [
+      { internalType: "address", name: "tokenAddress", type: "address" },
+      { internalType: "uint256", name: "amountIn", type: "uint256" },
+      { internalType: "uint256", name: "minEthOut", type: "uint256" },
+    ],
+    name: "swapTokenForETH",
+    outputs: [
+      { internalType: "uint256", name: "ethOut", type: "uint256" },
+    ],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
 ];
 
-app.post("/api/v1/swap", async (req, res) => {
+// Buy tokens: ETH -> Token
+app.post("/api/v1/swap/buy", async (req, res) => {
   try {
     const { token_address, eth_amount } = req.body ?? {};
 
@@ -61,6 +75,78 @@ app.post("/api/v1/swap", async (req, res) => {
       value,
     });
 
+    return res.json({
+      txHash: tx.hash,
+    });
+  } catch (err) {
+    console.error("Swap failed:", err);
+    return res.status(500).json({
+      error: "Swap failed",
+      details:
+        err instanceof Error ? err.message : "Unknown error during swap",
+    });
+  }
+});
+
+// Sell tokens: Token -> ETH
+app.post("/api/v1/swap/sell", async (req, res) => {
+  try {
+    const { token_address, token_amount, min_eth_out } = req.body ?? {};
+
+    if (!token_address || typeof token_address !== "string") {
+      return res.status(400).json({ error: "token_address is required" });
+    }
+    if (!token_amount || typeof token_amount !== "string") {
+      return res
+        .status(400)
+        .json({ error: "token_amount (string) is required" });
+    }
+
+    const rpcUrl = process.env.SEPOLIA_RPC_URL;
+    const privateKey = process.env.SEPOLIA_PRIVATE_KEY;
+    const swapperAddress = process.env.SWAPPER_ADDRESS;
+
+    if (!rpcUrl || !privateKey || !swapperAddress) {
+      return res.status(500).json({
+        error:
+          "SEPOLIA_RPC_URL, SEPOLIA_PRIVATE_KEY, and SWAPPER_ADDRESS must be set",
+      });
+    }
+
+    const provider = new JsonRpcProvider(rpcUrl);
+    const wallet = new Wallet(privateKey, provider);
+
+    const erc20 = new Contract(
+      token_address,
+      [
+        "function decimals() view returns (uint8)",
+        "function approve(address,uint256) returns (bool)",
+      ],
+      wallet,
+    );
+
+    const decimals = await erc20.decimals();
+    const amountIn = BigInt(
+      (parseEther(token_amount) / parseEther("1")).toString(),
+    ) * 10n ** BigInt(decimals);
+
+    const approveTx = await erc20.approve(swapperAddress, amountIn);
+    await approveTx.wait();
+
+    const swapper = new Contract(swapperAddress, SWAPPER_ABI, wallet);
+
+    const minEthOut =
+      typeof min_eth_out === "string"
+        ? BigInt(parseEther(min_eth_out).toString())
+        : process.env.MIN_ETH_OUT !== undefined
+          ? BigInt(process.env.MIN_ETH_OUT)
+          : 0n;
+
+    const tx = await swapper.swapTokenForETH(
+      token_address,
+      amountIn,
+      minEthOut,
+    );
     return res.json({
       txHash: tx.hash,
     });
