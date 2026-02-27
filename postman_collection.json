@@ -60,6 +60,35 @@
       "response": []
     },
     {
+      "name": "Sell All Tokens (Contract-Level)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"token_address\": \"{{TOKEN_ADDRESS}}\",\n  \"min_eth_out\": \"0\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/v1/swap/sell-all",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "v1", "swap", "sell-all"]
+        }
+      },
+      "response": []
+    },
+    {
       "name": "Get Token Balance",
       "request": {
         "method": "GET",

@@ -97,5 +97,38 @@ describe("EthToTokenUniswapV2Swapper", function () {
       swapper.swapTokenForETH(WETH_ADDRESS, 1n, 0),
     ).to.be.revertedWith("Use wrap for WETH");
   });
+
+  it("reverts swapAllTokenForETH when token address is zero", async () => {
+    const Swapper = await ethers.getContractFactory(
+      "EthToTokenUniswapV2Swapper",
+    );
+    const swapper = await Swapper.deploy(ROUTER_ADDRESS, WETH_ADDRESS);
+
+    await expect(
+      swapper.swapAllTokenForETH(ethers.ZeroAddress, 0),
+    ).to.be.revertedWith("Invalid token address");
+  });
+
+  it("reverts swapAllTokenForETH when token address is WETH", async () => {
+    const Swapper = await ethers.getContractFactory(
+      "EthToTokenUniswapV2Swapper",
+    );
+    const swapper = await Swapper.deploy(ROUTER_ADDRESS, WETH_ADDRESS);
+
+    await expect(
+      swapper.swapAllTokenForETH(WETH_ADDRESS, 0),
+    ).to.be.revertedWith("Use wrap for WETH");
+  });
+
+  it("reverts swapAllTokenForETH when wallet has zero balance", async () => {
+    const Swapper = await ethers.getContractFactory(
+      "EthToTokenUniswapV2Swapper",
+    );
+    const swapper = await Swapper.deploy(ROUTER_ADDRESS, WETH_ADDRESS);
+
+    await expect(
+      swapper.swapAllTokenForETH(DUMMY_TOKEN_ADDRESS, 0),
+    ).to.be.revertedWith("No tokens in wallet");
+  });
 });
 

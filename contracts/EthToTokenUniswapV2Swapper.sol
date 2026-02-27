@@ -28,6 +28,7 @@ interface IUniswapV2Router02 {
 interface IERC20 {
         function transferFrom(address from, address to, uint256 value) external returns (bool);
         function approve(address spender, uint256 value) external returns (bool);
+        function balanceOf(address account) external view returns (uint256);
 }
 
 contract EthToTokenUniswapV2Swapper {
@@ -141,6 +142,57 @@ contract EthToTokenUniswapV2Swapper {
         require(ok, "Token transfer failed");
 
         // Approve the router to spend the tokens just transferred in.
+        ok = token.approve(address(uniswapRouter), amountIn);
+        require(ok, "Approve failed");
+
+        // Build the swap path: token -> WETH
+        address[] memory path = new address[](2);
+        path[0] = tokenAddress;
+        path[1] = WETH;
+
+        uint256 deadline = block.timestamp + 15 minutes;
+
+        uint256[] memory amounts = uniswapRouter.swapExactTokensForETH(
+            amountIn,
+            minEthOut,
+            path,
+            msg.sender,
+            deadline
+        );
+
+        ethOut = amounts[amounts.length - 1];
+
+        emit TokenSwappedForEth(msg.sender, tokenAddress, amountIn, ethOut);
+    }
+
+    /// @notice Swap all tokens in caller's wallet for ETH via Uniswap V2.
+    /// @dev
+    /// - Automatically fetches caller's token balance.
+    /// - Transfers all tokens from caller to this contract.
+    /// - Swaps along the path [tokenAddress, WETH].
+    /// - ETH is sent directly to the caller (`msg.sender`).
+    ///
+    /// @param tokenAddress Address of the ERC20 token to sell.
+    /// @param minEthOut Minimum acceptable amount of ETH out (slippage protection).
+    /// @return amountIn The amount of tokens sold.
+    /// @return ethOut The actual amount of ETH received.
+    function swapAllTokenForETH(
+        address tokenAddress,
+        uint256 minEthOut
+    ) external returns (uint256 amountIn, uint256 ethOut) {
+        require(tokenAddress != address(0), "Invalid token address");
+        require(tokenAddress != WETH, "Use wrap for WETH");
+
+        // Get caller's token balance.
+        IERC20 token = IERC20(tokenAddress);
+        amountIn = token.balanceOf(msg.sender);
+        require(amountIn > 0, "No tokens in wallet");
+
+        // Pull all tokens from the user into this contract.
+        bool ok = token.transferFrom(msg.sender, address(this), amountIn);
+        require(ok, "Token transfer failed");
+
+        // Approve the router to spend the tokens.
         ok = token.approve(address(uniswapRouter), amountIn);
         require(ok, "Approve failed");
 
