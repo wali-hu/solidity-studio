@@ -37,6 +37,7 @@ async function main() {
       "function decimals() view returns (uint8)",
       "function symbol() view returns (string)",
       "function approve(address,uint256) returns (bool)",
+      "function allowance(address,address) view returns (uint256)",
     ],
     tokenAddress,
   );
