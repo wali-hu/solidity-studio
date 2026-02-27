@@ -126,8 +126,13 @@ describe("EthToTokenUniswapV2Swapper", function () {
     );
     const swapper = await Swapper.deploy(ROUTER_ADDRESS, WETH_ADDRESS);
 
+    // Deploy a mock ERC20 token with zero balance
+    const MockERC20 = await ethers.getContractFactory("MockERC20");
+    const mockToken = await MockERC20.deploy("Test Token", "TEST", 18);
+    // Don't mint any tokens, so balance will be 0
+
     await expect(
-      swapper.swapAllTokenForETH(DUMMY_TOKEN_ADDRESS, 0),
+      swapper.swapAllTokenForETH(await mockToken.getAddress(), 0),
     ).to.be.revertedWith("No tokens in wallet");
   });
 });
