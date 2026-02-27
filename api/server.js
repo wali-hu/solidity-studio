@@ -1,5 +1,5 @@
 import express from "express";
-import { JsonRpcProvider, Wallet, Contract, parseEther } from "ethers";
+import { JsonRpcProvider, Wallet, Contract, parseEther, parseUnits } from "ethers";
 import * as dotenv from "dotenv";
 
 dotenv.config();
@@ -126,9 +126,7 @@ app.post("/api/v1/swap/sell", async (req, res) => {
     );
 
     const decimals = await erc20.decimals();
-    const amountIn = BigInt(
-      (parseEther(token_amount) / parseEther("1")).toString(),
-    ) * 10n ** BigInt(decimals);
+    const amountIn = parseUnits(token_amount, decimals);
 
     const approveTx = await erc20.approve(swapperAddress, amountIn);
     await approveTx.wait();
