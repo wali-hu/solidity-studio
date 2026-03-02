@@ -5,10 +5,9 @@ ETH ↔ ERC20 swap contract and API using **Uniswap V3** (SwapRouter02) on **Eth
 ## Behaviour
 
 - **swapETHForToken(tokenAddress, minAmountOut)** – Send ETH; receive ERC20 (wraps to WETH, then V3 single-hop swap).
-- **swapTokenForETH(tokenAddress, amountIn, minEthOut)** – Sell a fixed amount of token for ETH.
 - **swapAllTokenForETH(tokenAddress, minEthOut)** – Sell caller’s full token balance for ETH.
 
-Pool fee tier: **0.30%** (3000). Deadline: 15 minutes.
+Pool fee tier: **0.30%** (3000).
 
 ## Addresses (Sepolia)
 
@@ -73,8 +72,6 @@ npx hardhat verify --network sepolia <SWAPPER_ADDRESS> 0x3bFA4769FB09eefC5a80d6E
 
 - **Buy (ETH → token):** `npx hardhat run scripts/interact-swapper.ts --network sepolia`  
   Env: `SWAPPER_ADDRESS`, `TOKEN_ADDRESS`, optional `ETH_AMOUNT`, `MIN_AMOUNT_OUT`.
-- **Sell (fixed amount):** `npx hardhat run scripts/interact-sell-token.ts --network sepolia`  
-  Env: `SWAPPER_ADDRESS`, `TOKEN_ADDRESS`, optional `TOKEN_AMOUNT`, `MIN_ETH_OUT`.
 - **Sell all:** `npx hardhat run scripts/interact-sell-all-tokens.ts --network sepolia`  
   Env: `SWAPPER_ADDRESS`, `TOKEN_ADDRESS`, optional `MIN_ETH_OUT`.
 - **Balance:** `npx hardhat run scripts/read-token-balance.ts --network sepolia`  
@@ -89,7 +86,6 @@ Same endpoints as the V2 version:
 | Method | Endpoint | Body |
 |--------|----------|------|
 | POST   | `/api/v1/swap/buy`      | `{ "token_address", "eth_amount" }` |
-| POST   | `/api/v1/swap/sell`     | `{ "token_address", "min_eth_out"? }` |
 | POST   | `/api/v1/swap/sell-all`| `{ "token_address", "min_eth_out"? }` |
 | GET    | `/api/v1/balance/:tokenAddress` | – |
 

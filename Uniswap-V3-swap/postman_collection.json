@@ -26,26 +26,7 @@
       "response": []
     },
     {
-      "name": "Sell Tokens (Token -> ETH)",
-      "request": {
-        "method": "POST",
-        "header": [{ "key": "Content-Type", "value": "application/json" }],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"token_address\": \"{{TOKEN_ADDRESS}}\",\n  \"min_eth_out\": \"0\"\n}"
-        },
-        "url": {
-          "raw": "http://localhost:3000/api/v1/swap/sell",
-          "protocol": "http",
-          "host": ["localhost"],
-          "port": "3000",
-          "path": ["api", "v1", "swap", "sell"]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "Sell All Tokens (Contract-Level)",
+      "name": "Sell All Tokens (Token -> ETH)",
       "request": {
         "method": "POST",
         "header": [{ "key": "Content-Type", "value": "application/json" }],

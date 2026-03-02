@@ -10,7 +10,6 @@ const PORT = process.env.PORT ?? 3000;
 
 const SWAPPER_ABI = [
   { inputs: [{ name: "tokenAddress", type: "address" }, { name: "minAmountOut", type: "uint256" }], name: "swapETHForToken", outputs: [{ name: "amountOut", type: "uint256" }], stateMutability: "payable", type: "function" },
-  { inputs: [{ name: "tokenAddress", type: "address" }, { name: "amountIn", type: "uint256" }, { name: "minEthOut", type: "uint256" }], name: "swapTokenForETH", outputs: [{ name: "ethOut", type: "uint256" }], stateMutability: "nonpayable", type: "function" },
   { inputs: [{ name: "tokenAddress", type: "address" }, { name: "minEthOut", type: "uint256" }], name: "swapAllTokenForETH", outputs: [{ name: "amountIn", type: "uint256" }, { name: "ethOut", type: "uint256" }], stateMutability: "nonpayable", type: "function" },
 ];
 
@@ -32,31 +31,6 @@ app.post("/api/v1/swap/buy", async (req, res) => {
     const minAmountOut = process.env.MIN_AMOUNT_OUT !== undefined ? BigInt(process.env.MIN_AMOUNT_OUT) : 0n;
     const tx = await swapper.swapETHForToken(token_address, minAmountOut, { value });
     return res.json({ txHash: tx.hash });
-  } catch (err) {
-    console.error("Swap failed:", err);
-    return res.status(500).json({ error: "Swap failed", details: err instanceof Error ? err.message : "Unknown" });
-  }
-});
-
-app.post("/api/v1/swap/sell", async (req, res) => {
-  try {
-    const body = req.body || {};
-    const token_address = body.token_address;
-    if (!token_address || typeof token_address !== "string") return res.status(400).json({ error: "token_address is required" });
-    const rpcUrl = process.env.SEPOLIA_RPC_URL;
-    const privateKey = process.env.SEPOLIA_PRIVATE_KEY;
-    const swapperAddress = process.env.SWAPPER_ADDRESS;
-    if (!rpcUrl || !privateKey || !swapperAddress) return res.status(500).json({ error: "Config required" });
-    const provider = new JsonRpcProvider(rpcUrl);
-    const wallet = new Wallet(privateKey, provider);
-    const erc20 = new Contract(token_address, ["function decimals() view returns (uint8)", "function balanceOf(address) view returns (uint256)", "function approve(address,uint256) returns (bool)", "function symbol() view returns (string)"], wallet);
-    const [balance, decimals, symbol] = await Promise.all([erc20.balanceOf(wallet.address), erc20.decimals(), erc20.symbol()]);
-    if (balance === 0n) return res.status(400).json({ error: "Insufficient balance", tokenAddress: token_address });
-    await (await erc20.approve(swapperAddress, balance)).wait();
-    const swapper = new Contract(swapperAddress, SWAPPER_ABI, wallet);
-    const minEthOut = typeof body.min_eth_out === "string" ? BigInt(parseEther(body.min_eth_out).toString()) : (process.env.MIN_ETH_OUT !== undefined ? BigInt(process.env.MIN_ETH_OUT) : 0n);
-    const tx = await swapper.swapTokenForETH(token_address, balance, minEthOut);
-    return res.json({ txHash: tx.hash, tokenAddress: token_address, symbol: symbol || "Unknown", amountSold: balance.toString() });
   } catch (err) {
     console.error("Swap failed:", err);
     return res.status(500).json({ error: "Swap failed", details: err instanceof Error ? err.message : "Unknown" });

@@ -1,4 +1,11 @@
+// [dotenv@17.3.1] injecting env (9) from .env -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
+// Sources flattened with hardhat v3.1.10 https://hardhat.org
+
 // SPDX-License-Identifier: MIT
+
+// File contracts/EthToTokenUniswapV3Swapper.sol
+
+// Original license: SPDX_License_Identifier: MIT
 pragma solidity ^0.8.28;
 
 /// @title ETH to Token Swapper using Uniswap V3 (Sepolia)
@@ -139,3 +146,4 @@ contract EthToTokenUniswapV3Swapper {
 
     receive() external payable {}
 }
+
