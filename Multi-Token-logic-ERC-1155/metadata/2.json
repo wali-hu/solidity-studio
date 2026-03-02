@@ -1,0 +1,11 @@
+{
+  "name": "Health Potion",
+  "description": "Consumable item that restores 50 health points when used",
+  "properties": {
+    "type": "Semi-Fungible",
+    "rarity": "Common",
+    "max_supply": 100,
+    "heal_amount": 50,
+    "cooldown": 5
+  }
+}

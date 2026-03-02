@@ -1,0 +1,12 @@
+{
+  "name": "Founder Sword",
+  "description": "Legendary weapon granted to founding members only",
+  "properties": {
+    "type": "NFT",
+    "rarity": "Legendary",
+    "max_supply": 1,
+    "attack": 100,
+    "durability": 1000,
+    "special_ability": "Founder's Blessing"
+  }
+}

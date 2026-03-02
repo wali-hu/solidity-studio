@@ -1,0 +1,34 @@
+{
+  "name": "Rare Unicorn #3",
+  "description": "A mystical unicorn with a pearlescent horn that glows in the moonlight. Known for its healing powers and grace, this rare creature is a symbol of purity.",
+  "attributes": [
+    {
+      "trait_type": "Rarity",
+      "value": "Rare"
+    },
+    {
+      "trait_type": "Element",
+      "value": "Light"
+    },
+    {
+      "trait_type": "Power Level",
+      "value": "78"
+    },
+    {
+      "trait_type": "Speed",
+      "value": "90"
+    },
+    {
+      "trait_type": "Horn",
+      "value": "Moonlight Pearl"
+    },
+    {
+      "trait_type": "Special Ability",
+      "value": "Healing Light"
+    },
+    {
+      "trait_type": "Background",
+      "value": "Enchanted Forest"
+    }
+  ]
+}

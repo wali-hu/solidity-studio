@@ -1,0 +1,34 @@
+{
+  "name": "Epic Griffin #4",
+  "description": "A powerful griffin combining the strength of a lion with the majesty of an eagle. Its sharp talons and keen eyes make it a formidable guardian.",
+  "attributes": [
+    {
+      "trait_type": "Rarity",
+      "value": "Epic"
+    },
+    {
+      "trait_type": "Element",
+      "value": "Air"
+    },
+    {
+      "trait_type": "Power Level",
+      "value": "88"
+    },
+    {
+      "trait_type": "Speed",
+      "value": "87"
+    },
+    {
+      "trait_type": "Wings",
+      "value": "Golden Eagle Wings"
+    },
+    {
+      "trait_type": "Special Ability",
+      "value": "Sky Dive Strike"
+    },
+    {
+      "trait_type": "Background",
+      "value": "Mountain Peak"
+    }
+  ]
+}
