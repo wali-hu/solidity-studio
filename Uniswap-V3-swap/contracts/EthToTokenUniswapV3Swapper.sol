@@ -14,14 +14,13 @@ interface IWETH {
     function transfer(address to, uint256 amount) external returns (bool);
 }
 
-/// @dev Uniswap V3 SwapRouter exactInputSingle (SwapRouter / SwapRouter02 compatible)
+/// @dev Uniswap V3 SwapRouter02 IV3SwapRouter – no deadline in struct (legacy SwapRouter has it)
 interface ISwapRouter {
     struct ExactInputSingleParams {
         address tokenIn;
         address tokenOut;
         uint24 fee;
         address recipient;
-        uint256 deadline;
         uint256 amountIn;
         uint256 amountOutMinimum;
         uint160 sqrtPriceLimitX96;
@@ -92,7 +91,6 @@ contract EthToTokenUniswapV3Swapper {
                 tokenOut: tokenAddress,
                 fee: POOL_FEE,
                 recipient: msg.sender,
-                deadline: block.timestamp + 15 minutes,
                 amountIn: msg.value,
                 amountOutMinimum: minAmountOut,
                 sqrtPriceLimitX96: 0
@@ -125,7 +123,6 @@ contract EthToTokenUniswapV3Swapper {
                 tokenOut: address(WETH),
                 fee: POOL_FEE,
                 recipient: address(this),
-                deadline: block.timestamp + 15 minutes,
                 amountIn: amountIn,
                 amountOutMinimum: minEthOut,
                 sqrtPriceLimitX96: 0
@@ -163,7 +160,6 @@ contract EthToTokenUniswapV3Swapper {
                 tokenOut: address(WETH),
                 fee: POOL_FEE,
                 recipient: address(this),
-                deadline: block.timestamp + 15 minutes,
                 amountIn: amountIn,
                 amountOutMinimum: minEthOut,
                 sqrtPriceLimitX96: 0
