@@ -1,57 +1,79 @@
-# Sample Hardhat 3 Beta Project (`mocha` and `ethers`)
+# Uniswap V3 Swap – Sepolia
 
-This project showcases a Hardhat 3 Beta project using `mocha` for tests and the `ethers` library for Ethereum interactions.
+ETH ↔ ERC20 swap contract and API using **Uniswap V3** (SwapRouter02) on **Ethereum Sepolia**.
 
-To learn more about the Hardhat 3 Beta, please visit the [Getting Started guide](https://hardhat.org/docs/getting-started#getting-started-with-hardhat-3). To share your feedback, join our [Hardhat 3 Beta](https://hardhat.org/hardhat3-beta-telegram-group) Telegram group or [open an issue](https://github.com/NomicFoundation/hardhat/issues/new) in our GitHub issue tracker.
+## Behaviour
 
-## Project Overview
+- **swapETHForToken(tokenAddress, minAmountOut)** – Send ETH; receive ERC20 (wraps to WETH, then V3 single-hop swap).
+- **swapTokenForETH(tokenAddress, amountIn, minEthOut)** – Sell a fixed amount of token for ETH.
+- **swapAllTokenForETH(tokenAddress, minEthOut)** – Sell caller’s full token balance for ETH.
 
-This example project includes:
+Pool fee tier: **0.30%** (3000). Deadline: 15 minutes.
 
-- A simple Hardhat configuration file.
-- Foundry-compatible Solidity unit tests.
-- TypeScript integration tests using `mocha` and ethers.js
-- Examples demonstrating how to connect to different types of networks, including locally simulating OP mainnet.
+## Addresses (Sepolia)
 
-## Usage
+| Contract   | Address |
+|-----------|--------|
+| SwapRouter02 | `0x3bFA4769FB09eefC5a80d6E87c3B9C650f7Ae48E` |
+| WETH      | `0xfff9976782d46cc05630d1f6ebab18b2324d6b14` |
 
-### Running Tests
+Ref: [Uniswap V3 Ethereum Deployments](https://docs.uniswap.org/contracts/v3/reference/deployments/ethereum-deployments).
 
-To run all the tests in the project, execute the following command:
+## Setup
 
-```shell
+```bash
+cp .env.example .env
+# Edit .env: SEPOLIA_RPC_URL, SEPOLIA_PRIVATE_KEY, SWAPPER_ADDRESS (after deploy), TOKEN_ADDRESS
+npm install
+```
+
+## Build & Test
+
+```bash
+npx hardhat compile
 npx hardhat test
 ```
 
-You can also selectively run the Solidity or `mocha` tests:
+## Deploy
 
-```shell
-npx hardhat test solidity
-npx hardhat test mocha
+```bash
+npx hardhat run scripts/deploy-swapper.ts --network sepolia
 ```
 
-### Make a deployment to Sepolia
+Then set `SWAPPER_ADDRESS` in `.env` and (optional) verify:
 
-This project includes an example Ignition module to deploy the contract. You can deploy this module to a locally simulated chain or to Sepolia.
-
-To run the deployment to a local chain:
-
-```shell
-npx hardhat ignition deploy ignition/modules/Counter.ts
+```bash
+npx hardhat verify --network sepolia <SWAPPER_ADDRESS> 0x3bFA4769FB09eefC5a80d6E87c3B9C650f7Ae48E 0xfff9976782d46cc05630d1f6ebab18b2324d6b14
 ```
 
-To run the deployment to Sepolia, you need an account with funds to send the transaction. The provided Hardhat configuration includes a Configuration Variable called `SEPOLIA_PRIVATE_KEY`, which you can use to set the private key of the account you want to use.
+## Scripts
 
-You can set the `SEPOLIA_PRIVATE_KEY` variable using the `hardhat-keystore` plugin or by setting it as an environment variable.
+- **Buy (ETH → token):** `npx hardhat run scripts/interact-swapper.ts --network sepolia`  
+  Env: `SWAPPER_ADDRESS`, `TOKEN_ADDRESS`, optional `ETH_AMOUNT`, `MIN_AMOUNT_OUT`.
+- **Sell (fixed amount):** `npx hardhat run scripts/interact-sell-token.ts --network sepolia`  
+  Env: `SWAPPER_ADDRESS`, `TOKEN_ADDRESS`, optional `TOKEN_AMOUNT`, `MIN_ETH_OUT`.
+- **Sell all:** `npx hardhat run scripts/interact-sell-all-tokens.ts --network sepolia`  
+  Env: `SWAPPER_ADDRESS`, `TOKEN_ADDRESS`, optional `MIN_ETH_OUT`.
+- **Balance:** `npx hardhat run scripts/read-token-balance.ts --network sepolia`  
+  Env: `TOKEN_ADDRESS`, optional `WALLET_ADDRESS`.
 
-To set the `SEPOLIA_PRIVATE_KEY` config variable using `hardhat-keystore`:
+## API
 
-```shell
-npx hardhat keystore set SEPOLIA_PRIVATE_KEY
+Same endpoints as the V2 version:
+
+| Method | Endpoint | Body |
+|--------|----------|------|
+| POST   | `/api/v1/swap/buy`      | `{ "token_address", "eth_amount" }` |
+| POST   | `/api/v1/swap/sell`     | `{ "token_address", "min_eth_out"? }` |
+| POST   | `/api/v1/swap/sell-all`| `{ "token_address", "min_eth_out"? }` |
+| GET    | `/api/v1/balance/:tokenAddress` | – |
+
+```bash
+npm run api
 ```
 
-After setting the variable, you can run the deployment with the Sepolia network:
+Use `postman_collection.json` for quick testing.
 
-```shell
-npx hardhat ignition deploy --network sepolia ignition/modules/Counter.ts
-```
+## License
+
+MIT
