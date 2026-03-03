@@ -48,6 +48,20 @@ const SWAPPER_ABI = [
     stateMutability: "nonpayable",
     type: "function",
   },
+  {
+    inputs: [
+      { internalType: "address", name: "tokenIn", type: "address" },
+      { internalType: "address", name: "tokenOut", type: "address" },
+      { internalType: "uint256", name: "amountIn", type: "uint256" },
+      { internalType: "uint256", name: "minAmountOut", type: "uint256" },
+    ],
+    name: "swapTokenForToken",
+    outputs: [
+      { internalType: "uint256", name: "amountOut", type: "uint256" },
+    ],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
 ];
 
 // Buy tokens: ETH -> Token
@@ -271,6 +285,86 @@ app.post("/api/v1/swap/sell-all", async (req, res) => {
       amountSold: balance.toString(),
       amountSoldFormatted: balanceFormatted.toString(),
       method: "contract-level",
+    });
+  } catch (err) {
+    console.error("Swap failed:", err);
+    return res.status(500).json({
+      error: "Swap failed",
+      details:
+        err instanceof Error ? err.message : "Unknown error during swap",
+    });
+  }
+});
+
+// Token-to-token swap (path: tokenIn -> WETH -> tokenOut)
+app.post("/api/v1/swap/token-to-token", async (req, res) => {
+  try {
+    const { token_in, token_out, token_amount, min_amount_out } = req.body ?? {};
+
+    if (!token_in || typeof token_in !== "string") {
+      return res.status(400).json({ error: "token_in is required" });
+    }
+    if (!token_out || typeof token_out !== "string") {
+      return res.status(400).json({ error: "token_out is required" });
+    }
+    if (!token_amount || typeof token_amount !== "string") {
+      return res.status(400).json({ error: "token_amount (string) is required" });
+    }
+
+    const rpcUrl = process.env.SEPOLIA_RPC_URL;
+    const privateKey = process.env.SEPOLIA_PRIVATE_KEY;
+    const swapperAddress = process.env.SWAPPER_ADDRESS;
+
+    if (!rpcUrl || !privateKey || !swapperAddress) {
+      return res.status(500).json({
+        error:
+          "SEPOLIA_RPC_URL, SEPOLIA_PRIVATE_KEY, and SWAPPER_ADDRESS must be set",
+      });
+    }
+
+    const provider = new JsonRpcProvider(rpcUrl);
+    const wallet = new Wallet(privateKey, provider);
+
+    const erc20 = new Contract(
+      token_in,
+      [
+        "function decimals() view returns (uint8)",
+        "function approve(address,uint256) returns (bool)",
+        "function allowance(address,address) view returns (uint256)",
+      ],
+      wallet,
+    );
+
+    const decimals = await erc20.decimals();
+    const amountIn = parseUnits(token_amount, decimals);
+
+    const allowance = await erc20.allowance(wallet.address, swapperAddress);
+    if (allowance < amountIn) {
+      const approveTx = await erc20.approve(swapperAddress, amountIn);
+      await approveTx.wait();
+    }
+
+    const swapper = new Contract(swapperAddress, SWAPPER_ABI, wallet);
+
+    const minAmountOut =
+      min_amount_out !== undefined && min_amount_out !== null
+        ? BigInt(min_amount_out)
+        : process.env.MIN_AMOUNT_OUT !== undefined
+          ? BigInt(process.env.MIN_AMOUNT_OUT)
+          : 0n;
+
+    const tx = await swapper.swapTokenForToken(
+      token_in,
+      token_out,
+      amountIn,
+      minAmountOut,
+    );
+
+    return res.json({
+      txHash: tx.hash,
+      tokenIn: token_in,
+      tokenOut: token_out,
+      amountIn: amountIn.toString(),
     });
   } catch (err) {
     console.error("Swap failed:", err);

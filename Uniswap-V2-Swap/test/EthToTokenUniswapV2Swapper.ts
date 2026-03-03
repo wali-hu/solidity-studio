@@ -7,8 +7,9 @@ describe("EthToTokenUniswapV2Swapper", function () {
   const ROUTER_ADDRESS = "0xeE567Fe1712Faf6149d80dA1E6934E354124CfE3";
   const WETH_ADDRESS = "0xfff9976782d46cc05630d1f6ebab18b2324d6b14";
 
-  // I am using a dummy token address in local tests; no real swaps occur.
+  // Dummy token addresses for local tests; no real swaps occur.
   const DUMMY_TOKEN_ADDRESS = "0x000000000000000000000000000000000000dEaD";
+  const DUMMY_TOKEN_ADDRESS_B = "0x000000000000000000000000000000000000bEEf";
   const DUMMY_TOKEN_HOLDER = "0x0000000000000000000000000000000000000001";
 
   it("deploys with the correct router and WETH addresses", async () => {
@@ -134,6 +135,70 @@ describe("EthToTokenUniswapV2Swapper", function () {
     await expect(
       swapper.swapAllTokenForETH(await mockToken.getAddress(), 0),
     ).to.be.revertedWith("No tokens in wallet");
+  });
+
+  it("reverts swapTokenForToken when amount is zero", async () => {
+    const Swapper = await ethers.getContractFactory(
+      "EthToTokenUniswapV2Swapper",
+    );
+    const swapper = await Swapper.deploy(ROUTER_ADDRESS, WETH_ADDRESS);
+
+    await expect(
+      swapper.swapTokenForToken(
+        DUMMY_TOKEN_ADDRESS,
+        DUMMY_TOKEN_ADDRESS_B,
+        0,
+        0,
+      ),
+    ).to.be.revertedWith("No tokens sent");
+  });
+
+  it("reverts swapTokenForToken when tokenIn is zero", async () => {
+    const Swapper = await ethers.getContractFactory(
+      "EthToTokenUniswapV2Swapper",
+    );
+    const swapper = await Swapper.deploy(ROUTER_ADDRESS, WETH_ADDRESS);
+
+    await expect(
+      swapper.swapTokenForToken(
+        ethers.ZeroAddress,
+        DUMMY_TOKEN_ADDRESS,
+        1n,
+        0,
+      ),
+    ).to.be.revertedWith("Invalid tokenIn");
+  });
+
+  it("reverts swapTokenForToken when tokenOut is zero", async () => {
+    const Swapper = await ethers.getContractFactory(
+      "EthToTokenUniswapV2Swapper",
+    );
+    const swapper = await Swapper.deploy(ROUTER_ADDRESS, WETH_ADDRESS);
+
+    await expect(
+      swapper.swapTokenForToken(
+        DUMMY_TOKEN_ADDRESS,
+        ethers.ZeroAddress,
+        1n,
+        0,
+      ),
+    ).to.be.revertedWith("Invalid tokenOut");
+  });
+
+  it("reverts swapTokenForToken when tokenIn equals tokenOut", async () => {
+    const Swapper = await ethers.getContractFactory(
+      "EthToTokenUniswapV2Swapper",
+    );
+    const swapper = await Swapper.deploy(ROUTER_ADDRESS, WETH_ADDRESS);
+
+    await expect(
+      swapper.swapTokenForToken(
+        DUMMY_TOKEN_ADDRESS,
+        DUMMY_TOKEN_ADDRESS,
+        1n,
+        0,
+      ),
+    ).to.be.revertedWith("Same token");
   });
 });
 
