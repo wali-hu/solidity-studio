@@ -21,6 +21,14 @@ interface IUniswapV2Router02 {
             uint256 deadline
         ) external returns (uint256[] memory amounts);
 
+        function swapExactTokensForTokens(
+            uint256 amountIn,
+            uint256 amountOutMin,
+            address[] calldata path,
+            address to,
+            uint256 deadline
+        ) external returns (uint256[] memory amounts);
+
         function WETH() external view returns (address);
 }
 
@@ -61,6 +69,15 @@ contract EthToTokenUniswapV2Swapper {
         address indexed tokenIn,
         uint256 amountIn,
         uint256 ethOut
+    );
+
+    /// @notice Emitted after a successful token-to-token swap.
+    event TokenSwappedForToken(
+        address indexed sender,
+        address indexed tokenIn,
+        address indexed tokenOut,
+        uint256 amountIn,
+        uint256 amountOut
     );
 
     /// @param _router Address of the Uniswap V2 Router02.
@@ -214,6 +231,46 @@ contract EthToTokenUniswapV2Swapper {
         ethOut = amounts[amounts.length - 1];
 
         emit TokenSwappedForEth(msg.sender, tokenAddress, amountIn, ethOut);
+    }
+
+    /// @notice Swap an exact amount of token A for token B via Uniswap V2 (path: tokenIn -> WETH -> tokenOut).
+    /// @dev Caller must have approved this contract to spend at least `amountIn` of tokenIn.
+    function swapTokenForToken(
+        address tokenIn,
+        address tokenOut,
+        uint256 amountIn,
+        uint256 minAmountOut
+    ) external returns (uint256 amountOut) {
+        require(amountIn > 0, "No tokens sent");
+        require(tokenIn != address(0), "Invalid tokenIn");
+        require(tokenOut != address(0), "Invalid tokenOut");
+        require(tokenIn != tokenOut, "Same token");
+
+        IERC20 token = IERC20(tokenIn);
+        bool ok = token.transferFrom(msg.sender, address(this), amountIn);
+        require(ok, "Token transfer failed");
+
+        ok = token.approve(address(uniswapRouter), amountIn);
+        require(ok, "Approve failed");
+
+        address[] memory path = new address[](3);
+        path[0] = tokenIn;
+        path[1] = WETH;
+        path[2] = tokenOut;
+
+        uint256 deadline = block.timestamp + 15 minutes;
+
+        uint256[] memory amounts = uniswapRouter.swapExactTokensForTokens(
+            amountIn,
+            minAmountOut,
+            path,
+            msg.sender,
+            deadline
+        );
+
+        amountOut = amounts[amounts.length - 1];
+
+        emit TokenSwappedForToken(msg.sender, tokenIn, tokenOut, amountIn, amountOut);
     }
 
     /// @notice Allow the contract to receive plain ETH (e.g., refunds from Uniswap).
