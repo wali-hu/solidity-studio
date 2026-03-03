@@ -1,0 +1,28 @@
+# Hardhat
+cache/
+artifacts/
+node_modules/
+typechain-types/
+
+# Environment variables
+.env
+
+# Coverage
+coverage/
+coverage.json
+
+# Misc
+.DS_Store
+*.swp
+*.swo
+*~
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

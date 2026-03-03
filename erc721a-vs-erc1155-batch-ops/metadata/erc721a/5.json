@@ -1,0 +1,9 @@
+{
+  "name": "Paladin",
+  "description": "A unique Paladin character from the Gaming Characters collection",
+  "attributes": [
+    {"trait_type": "Class", "value": "paladin"},
+    {"trait_type": "Level", "value": "25"},
+    {"trait_type": "Rarity", "value": "legendary"}
+  ]
+}

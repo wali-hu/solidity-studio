@@ -1,0 +1,34 @@
+{
+  "name": "Mythical Phoenix #2",
+  "description": "An eternal phoenix that rises from its ashes. With brilliant flames of red and gold, this mythical bird symbolizes rebirth and immortality.",
+  "attributes": [
+    {
+      "trait_type": "Rarity",
+      "value": "Mythical"
+    },
+    {
+      "trait_type": "Element",
+      "value": "Fire"
+    },
+    {
+      "trait_type": "Power Level",
+      "value": "92"
+    },
+    {
+      "trait_type": "Speed",
+      "value": "98"
+    },
+    {
+      "trait_type": "Wings",
+      "value": "Flame Wings"
+    },
+    {
+      "trait_type": "Special Ability",
+      "value": "Resurrection"
+    },
+    {
+      "trait_type": "Background",
+      "value": "Eternal Flames"
+    }
+  ]
+}

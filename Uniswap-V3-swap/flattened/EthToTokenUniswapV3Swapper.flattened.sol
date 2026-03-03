@@ -1,4 +1,4 @@
-// [dotenv@17.3.1] injecting env (10) from .env -- tip: ⚙️  write to custom object with { processEnv: myObject }
+// [dotenv@17.3.1] injecting env (9) from .env -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
 // Sources flattened with hardhat v3.1.10 https://hardhat.org
 
 // SPDX-License-Identifier: MIT
