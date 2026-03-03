@@ -1,9 +1,0 @@
-{
-  "name": "Rogue",
-  "description": "A unique Rogue character from the Gaming Characters collection",
-  "attributes": [
-    {"trait_type": "Class", "value": "rogue"},
-    {"trait_type": "Level", "value": "20"},
-    {"trait_type": "Rarity", "value": "epic"}
-  ]
-}

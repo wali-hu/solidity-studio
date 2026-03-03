@@ -1,9 +1,0 @@
-{
-  "name": "Archer",
-  "description": "A unique Archer character from the Gaming Characters collection",
-  "attributes": [
-    {"trait_type": "Class", "value": "archer"},
-    {"trait_type": "Level", "value": "12"},
-    {"trait_type": "Rarity", "value": "uncommon"}
-  ]
-}
